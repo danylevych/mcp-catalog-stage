@@ -1,0 +1,386 @@
+name: HubSpot
+entryKey: hubspot
+serverUserType: singleUser
+shortDescription: "Manage HubSpot CRM objects, schemas, properties, and workflows"
+description: |
+  A Model Context Protocol (MCP) server that integrates with HubSpot CRM.
+
+  This MCP server is currently in beta.
+
+  ## Features
+  - **CRM**: Manage CRM objects, schemas, and properties
+  - **Automation**: Manage HubSpot workflows
+
+  ## What you'll need to connect
+
+  **Required:**
+  - **A HubSpot MCP Auth App**: register one under Development -> MCP Auth Apps in your HubSpot account, then give its client ID and client secret to your Obot administrator. The remote server accepts OAuth only -- a private app access token works with the local `@hubspot/mcp-server` package, not with this endpoint.
+
+  You are not asked to pick scopes when registering the app. HubSpot derives them from the tools this server exposes and from what you approve on the consent screen.
+
+metadata:
+  categories: "Business, SaaS & API Integrations"
+icon: https://img.icons8.com/?size=100&id=Xq3RA1kWzz3X&format=png&color=000000
+repoURL: https://www.npmjs.com/package/@hubspot/mcp-server
+runtime: remote
+remoteConfig:
+  fixedURL: https://mcp.hubspot.com
+  # mcp.hubspot.com takes OAuth 2.1 + PKCE and nothing else, and its
+  # authorization-server metadata advertises no registration_endpoint, so
+  # dynamic registration 404s. The client has to be registered by hand in
+  # HubSpot (Development > MCP Auth Apps) and its id and secret given to Obot,
+  # which is what this flag makes Obot say instead of surfacing that 404.
+  staticOAuthRequired: true
+toolPreview:
+  - name: hubspot-batch-create-associations
+    description: |
+      🛡️ Guardrails:
+            1.  Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Establishes relationships between HubSpot objects, linking records across different object types, by creating associations between objects in batch.
+            2. Uses a single set of association types for all associations in the batch.
+
+          📋 Prerequisites:
+            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
+            2. Use the hubspot-get-association-definitions tool to identify valid association types before creating associations.
+    params:
+      fromObjectType: "The type of HubSpot object to create association from. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      inputs: List of association inputs defining the relationships to create. (max 100 associations per batch)
+      toObjectType: "The type of HubSpot object to create association to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      types: The types of associations to create
+  - name: hubspot-batch-create-objects
+    description: |
+      🛡️ Guardrails:
+            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Creates multiple HubSpot objects of the same objectType in a single API call, optimizing for bulk operations.
+
+          📋 Prerequisites:
+            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
+            2. Use the hubspot-list-objects tool to sample existing objects for the object type.
+            3. Use the hubspot-get-association-definitions tool to identify valid association types before creating associations.
+    params:
+      inputs: Array of objects to create (maximum 100 per batch)
+      objectType: "The type of HubSpot object to create. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+  - name: hubspot-batch-read-objects
+    description: |
+      🎯 Purpose:
+            1. Retrieves multiple HubSpot objects of the same object type by their IDs in a single batch operation.
+
+          🧭 Usage Guidance:
+            1. Use this tool to retrieve objects when the object IDs are known.
+    params:
+      inputs: Array of object IDs to read (maximum 100 per batch)
+      objectType: "The type of HubSpot object to read. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      properties: Optional list of property names to include in the results
+      propertiesWithHistory: Optional list of property names to include with history
+  - name: hubspot-batch-update-objects
+    description: |
+      🛡️ Guardrails:
+            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Updates multiple existing HubSpot objects of the same objectType in a single API call.
+            2. Use this tool when the user wants to update one or more existing CRM objects.
+            3. If you are unsure about the property type to update, identify existing properties of the object and ask the user.
+
+          📋 Prerequisites:
+            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
+            2. Use the hubspot-list-objects tool to sample existing objects for the object type.
+            3. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
+    params:
+      inputs: Array of objects to update (maximum 100 per batch)
+      objectType: "The type of HubSpot object to update. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+  - name: hubspot-create-engagement
+    description: |
+      🛡️ Guardrails:
+            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Creates a HubSpot engagement (Note or Task) associated with contacts, companies, deals, or tickets.
+            2. This endpoint is useful for keeping your CRM records up-to-date on any interactions that take place outside of HubSpot.
+            3. Activity reporting in the CRM also feeds off of this data.
+
+          📋 Prerequisites:
+            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId.
+
+          🧭 Usage Guidance:
+            1. Use NOTE type for adding notes to records
+            2. Use TASK type for creating tasks with subject, status, and assignment
+            3. Both require relevant associations to connect them to CRM records
+            4. Other types of engagements (EMAIL, CALL, MEETING) are NOT supported yet.
+            5. HubSpot notes and task descriptions support HTML formatting. However headings (<h1>, <h2>, etc.) look ugly in the CRM. So use them sparingly.
+    params:
+      associations: Associated records for this engagement
+      metadata: Metadata specific to the engagement type
+      ownerId: The ID of the owner of this engagement
+      timestamp: Timestamp for the engagement (milliseconds since epoch). Defaults to current time if not provided.
+      type: The type of engagement to create (NOTE or TASK)
+  - name: hubspot-create-property
+    description: |
+      🛡️ Guardrails:
+            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Creates new custom properties for HubSpot object types, enabling data structure customization.
+
+          📋 Prerequisites:
+            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
+            2. Use the hubspot-list-objects tool to sample existing objects for the object type.
+            3. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
+
+          🧭 Usage Guidance:
+            1. Use this tool when you need to create a new custom property for a HubSpot object type.
+            2. Makes sure that the user is looking to create a new property, and not create an object of a specific object type.
+            3. Use list-properties to get a list of all properties for a given object type to be sure that the property does not already exist.
+            4. Use list-properties to to understand the data structure of object properties first.
+    params:
+      calculationFormula: A formula that is used to compute a calculated property
+      description: A description of the property that will be shown as help text
+      displayOrder: The order for displaying the property (lower numbers displayed first)
+      externalOptions: Only for enumeration type properties. Should be set to true in conjunction with a referencedObjectType
+      fieldType: Controls how the property appears in HubSpot
+      formField: Whether the property can be used in forms
+      groupName: The name of the property group the property belongs to
+      hasUniqueValue: "Whether the property's value must be unique"
+      hidden: Whether the property should be hidden in HubSpot
+      label: A human-readable property label that will be shown in HubSpot
+      name: "The internal property name, which must be used when referencing the property via the API"
+      objectType: "The type of HubSpot object to create the property for. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      options: A list of valid options for enumeration properties
+      type: The data type of the property
+  - name: hubspot-generate-feedback-link
+    description: |
+      🎯 Purpose:
+            1. Use this tool when the user wants to submit feedback about HubSpot MCP tool.
+            2. Use this tool proactively when the other HubSpot MCP tools are unable to solve the user's tasks effectively.
+            3. Use this tool when you sense dissatisfaction from the user using HubSpot MCP tools.
+            4. Feedback will help us improve the HubSpot MCP tools in future iterations.
+    params: {}
+  - name: hubspot-get-association-definitions
+    description: |
+      🎯 Purpose:
+            1. Retrieves valid association types between specific HubSpot object types.
+
+          📦 Returns:
+            1. Array of valid association definitions with type IDs, labels, and categories.
+
+          🧭 Usage Guidance:
+            1. Always use before creating associations to ensure valid relationship types or to help troubleshoot association creation errors.
+    params:
+      fromObjectType: "The type of HubSpot object to get association from. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      toObjectType: "The type of HubSpot object to get association to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+  - name: hubspot-get-engagement
+    description: |
+      🎯 Purpose:
+            1. Retrieves a HubSpot engagement by ID.
+    params:
+      engagementId: The ID of the engagement to retrieve
+  - name: hubspot-get-link
+    description: |
+      🎯 Purpose:
+            1. Generates HubSpot UI links for different pages based on object types and IDs.
+            2. Supports both index pages (lists of objects) and record pages (specific object details).
+
+          📋 Prerequisites:
+            1. Use the hubspot-get-user-details tool to get the PortalId and UiDomain.
+
+          🧭 Usage Guidance:
+            1. Use to generate links to HubSpot UI pages when users need to reference specific HubSpot records.
+            2. Validates that object type IDs exist in the HubSpot system.
+    params:
+      pageRequests: Array of page link requests to generate
+      portalId: The HubSpot portal/account ID
+      uiDomain: "The HubSpot UI domain(e.g., 'app.hubspot.com')"
+  - name: hubspot-get-property
+    description: |
+      🎯 Purpose:
+            1. This tool retrieves detailed information about a specific property for a HubSpot object type.
+            2. You can use this to get all metadata related to a property, including its type, options,
+               and other configuration details.
+    params:
+      objectType: "The type of HubSpot object the property belongs to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      propertyName: The name of the property to retrieve
+  - name: hubspot-get-schemas
+    description: |
+      🎯 Purpose:
+            1. Retrieves all custom object schemas defined in the HubSpot account.
+
+          🧭 Usage Guidance:
+            1. Before working with custom objects to understand available object types,
+               their properties, and associations.
+
+          📦 Returns:
+            1. Provides the objectTypeId and objectType for each schema.
+            2. These attributes should be used for this object type instead of "custom" in subsequent requests.
+    params: {}
+  - name: hubspot-get-user-details
+    description: |
+      🎯 Purpose
+            1. Authenticates and analyzes the current HubSpot access token, providing context about the user's permissions and account details.
+
+          🧭 Usage Guidance:
+            1. This tool must be used before performing any operations with Hubspot tools to determine the identity of the user, and permissions they have on their Hubspot account.
+
+          📦 Returns:
+            1. User ID, Hub ID, App ID, token type, a comprehensive list of authorized API scopes, and detailed owner information, and account information.
+            2. The uiDomain and hubId can be used to construct URLs to the HubSpot UI for the user.
+            3. If the user is an owner, the ownerId will help identify objects that are owned by the user.
+    params: {}
+  - name: hubspot-get-workflow
+    description: |
+      🎯 Purpose:
+            1. This tool retrieves detailed information about a specific workflow from the HubSpot account.
+
+          🧭 Usage Guidance:
+            1. Use the "flowId" parameter to specify which workflow to retrieve.
+            2. This endpoint returns complete workflow information including actions, enrollment criteria, and scheduling.
+            3. Use the hubspot-list-workflows tool first to identify the workflow ID you need.
+    params:
+      flowId: The ID of the workflow to retrieve
+  - name: hubspot-list-associations
+    description: |
+      🎯 Purpose:
+            1. Retrieves existing relationships between a specific object and other objects of a particular type.
+            2. For example, you can find all companies that a contact is associated with, all deals related to a company, or discover which customers have an open ticket.
+
+          📦 Returns:
+            1. Collection of associated object IDs and relationship metadata.
+            2. Use hubspot-batch-read-objects to get more information about the associated objects.
+
+          🧭 Usage Guidance:
+            1. Use this tool when mapping relationships between different HubSpot objects to understand your data's connections.
+            2. This tool is ideal when you already know a specific record's ID and need to discover its relationships with other object types.
+            3. Prefer this over hubspot-search-objects tool when exploring established connections rather than filtering by properties or criteria.
+    params:
+      after: Paging cursor token for retrieving the next page of results
+      objectId: The ID of the HubSpot object to get associations from
+      objectType: "The type of HubSpot object to get associations from. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      toObjectType: "The type of HubSpot object to get associations to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+  - name: hubspot-list-objects
+    description: |
+      🎯 Purpose:
+            1. Retrieves a paginated list of objects of a specified type from HubSpot.
+
+          📦 Returns:
+            1. Collection of objects with their properties and metadata, plus pagination information.
+
+          🧭 Usage Guidance:
+            1. Use for initial data exploration to understand the data structure of a HubSpot object type.
+            2. Helps list objects when the search criteria or filter criteria is not clear.
+            3. Use hubspot-search-objects for targeted queries when the data structure is known.
+            4. Use hubspot-batch-read-objects to retrieve specific objects by their IDs.
+            5. Use hubspot-list-associations to list associations between objects.
+    params:
+      after: The paging cursor token of the last successfully read resource.
+      archived: Whether to return only results that have been archived.
+      associations: "A list of object types to retrieve associated IDs for (e.g., appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users)."
+      limit: "The maximum number of results to display per page (max: 500)."
+      objectType: "The type of HubSpot object to list. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      properties: A list of the properties to be returned in the response.
+  - name: hubspot-list-properties
+    description: |
+      🎯 Purpose:
+            1. This tool retrieves a complete catalog of properties for any HubSpot object type.
+
+          🧭 Usage Guidance:
+            1. This API has a large response that can consume a lot of tokens. Use the hubspot-list-objects tool to sample existing objects for the object type first.
+            2. Try to use the hubspot-get-property tool to get a specific property.
+            3. Use at the beginning of workflows to understand available data structures.
+    params:
+      archived: Whether to return only properties that have been archived.
+      includeHidden: Whether to include hidden properties in the response.
+      objectType: "The type of HubSpot object to get properties for. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+  - name: hubspot-list-workflows
+    description: |
+      🎯 Purpose:
+            1. This tool retrieves a paginated list of workflows from the HubSpot account.
+
+          🧭 Usage Guidance:
+            1. Use the "limit" parameter to control the number of results returned per page.
+            2. For pagination, use the "after" parameter with the value from the previous response's paging.next.after.
+            3. This endpoint returns essential workflow information including ID, name, type, and status.
+    params:
+      after: Cursor token to fetch the next page of results. Use the paging.next.after value from the previous response.
+      limit: The maximum number of workflows to return per page (1-100).
+  - name: hubspot-search-objects
+    description: |
+      🎯 Purpose:
+            1. Performs advanced filtered searches across HubSpot object types using complex criteria.
+
+          📋 Prerequisites:
+            1. Use the hubspot-list-objects tool to sample existing objects for the object type.
+            2. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
+
+          📦 Returns:
+            1. Filtered collection matching specific criteria with pagination information.
+
+          🧭 Usage Guidance:
+            1. Preferred for targeted data retrieval when exact filtering criteria are known. Supports complex boolean logic through filter groups.
+            2. Use hubspot-list-objects when filter criteria is not specified or clear or when a search fails.
+            3. Use hubspot-batch-read-objects to retrieve specific objects by their IDs.
+            4. Use hubspot-list-associations to get the associations between objects.
+
+          🔍 Filtering Capabilities:
+            1. Think of "filterGroups" as separate search conditions that you want to combine with OR logic (meaning ANY of them can match).
+            2. If you want to find things that match ALL of several conditions (AND logic), put those conditions together in the same filters list.
+            3. If you want to find things that match AT LEAST ONE of several conditions (OR logic), put each condition in a separate filterGroup.
+            4. You can include a maximum of five filterGroups with up to 6 filters in each group, with a maximum of 18 filters in total.
+    params:
+      after: The paging cursor token of the last successfully read resource.
+      filterGroups: Groups of filters to apply (combined with OR).
+      limit: "The maximum number of results to display per page (max: 100)."
+      objectType: "The type of HubSpot object to search. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      properties: A list of the properties to be returned in the response.
+      query: "Text to search across default searchable properties of the specified object type. Each object type has different searchable properties. For example: contacts (firstname, lastname, email, phone, company), companies (name, website, domain, phone), deals (dealname, pipeline, dealstage, description, dealtype), etc"
+      sorts: A list of sort criteria to apply to the results.
+  - name: hubspot-update-engagement
+    description: |
+      🛡️ Guardrails:
+            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Updates an existing HubSpot engagement (Note or Task).
+            2. Allows modification of engagement attributes, content, and metadata.
+
+          📋 Prerequisites:
+            1. You need the engagement ID to update an existing engagement.
+            2. Use the hubspot-get-engagement tool to get the current engagement details if needed.
+            3. Use the hubspot-get-user-details tool to get the owner ID.
+
+          🧭 Usage Guidance:
+            1. Use for updating NOTE content or TASK details (subject, description, status).
+            2. Only include the fields you want to update - other fields will remain unchanged.
+            3. HubSpot notes and task descriptions support HTML formatting. However headings (<h1>, <h2>, etc.) look ugly in the CRM. So use them sparingly.
+    params:
+      associations: Associated records for this engagement
+      engagementId: The ID of the engagement to update
+      metadata: Metadata specific to the engagement type (Note or Task)
+      ownerId: The ID of the owner of this engagement
+      timestamp: Timestamp for the engagement (milliseconds since epoch).
+  - name: hubspot-update-property
+    description: |
+      🛡️ Guardrails:
+            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+
+          🎯 Purpose:
+            1. Updates existing custom properties for HubSpot object types, enabling data structure customization.
+
+          🧭 Usage Guidance:
+            1. Use hubspot-list-objects tool to sample existing objects for the object type.
+            2. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
+    params:
+      calculationFormula: A formula that is used to compute a calculated property
+      description: A description of the property that will be shown as help text
+      displayOrder: The order for displaying the property (lower numbers displayed first)
+      fieldType: Controls how the property appears in HubSpot
+      formField: Whether the property can be used in forms
+      groupName: The name of the property group the property belongs to
+      hidden: Whether the property should be hidden in HubSpot
+      label: A human-readable property label that will be shown in HubSpot
+      objectType: "The type of HubSpot object the property belongs to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
+      options: A list of valid options for enumeration properties
+      propertyName: The name of the property to update
+      type: The data type of the property

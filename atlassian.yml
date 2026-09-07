@@ -1,0 +1,331 @@
+name: Atlassian
+entryKey: atlassian
+serverUserType: singleUser
+shortDescription: "Manage Jira issues, Confluence pages, and Compass services with AI assistance"
+description: |
+  A Model Context Protocol (MCP) server that bridges between your Atlassian Cloud site and compatible external tools. Once configured, it enables those tools to interact with Jira, Compass, and Confluence data in real-time.
+
+  ## Features
+  - **Smart Jira Management**: Create, update, search, and transition issues with AI assistance, manage comments, worklogs, and issue links
+  - **Intelligent Confluence Operations**: Search content using CQL, create and update pages, manage comments (footer, inline, and replies), and navigate page hierarchies
+  - **Compass Integration**: Query service dependencies and manage your service landscape
+  - **Rovo Search & Fetch**: Powerful unified search across Jira and Confluence, fetch resources by ARI (Atlassian Resource Identifier)
+  - **Advanced Filtering**: Use JQL for Jira issues and CQL for Confluence content with AI-powered natural language queries
+  - **Zero Configuration**: OAuth flow handles authentication automatically - no API tokens or local setup needed
+  - **Enterprise Ready**: Respects existing user permissions and access controls across all Atlassian products
+
+  ## What you'll need to connect
+
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow.
+
+  **Important for Admins**: To enable OAuth with Agentic Coworker, your Atlassian admin must add the Agentic Coworker callback URL domain:
+  1. Go to [Atlassian Administration](https://admin.atlassian.com) and select your organization
+  2. Navigate to **Apps > AI settings > Rovo MCP server**
+  3. Add your Agentic Coworker domain (e.g., `https://your-agentic-coworker-domain/**`)
+
+  ## Example Usage
+
+  Ask your AI assistant to:
+
+  - **Jira Management** - "Update Jira ticket PROJ-123 status to In Progress" or "Log 2h of work on ticket PROJ-123"
+  - **Confluence Search** - "Find our OKR guide in Confluence and summarize it" or "Search for authentication documentation"
+  - **Content Creation** - "Create a tech design doc for XYZ feature in the Engineering space"
+  - **Issue Filtering** - "Show me all urgent bugs assigned to me from last week"
+  - **Cross-Product Linking** - "Link Jira ticket ABC-456 to DEF-789 as Blocks"
+  - **Compass Integration** - "What services depend on the api-gateway component?"
+
+metadata:
+  categories: "Developer Tools"
+  allow-multiple: "true"
+icon: https://avatars.githubusercontent.com/u/168166?s=200&v=4
+repoURL: https://support.atlassian.com/atlassian-rovo-mcp-server/docs/getting-started-with-the-atlassian-remote-mcp-server/
+runtime: remote
+remoteConfig:
+  fixedURL: https://mcp.atlassian.com/v1/mcp
+toolPreview:
+  - name: atlassianUserInfo
+    description: Get current user info
+    params: {}
+  - name: getAccessibleAtlassianResources
+    description: "Get cloudId to make tool calls. When a link is provided (e.g. https://site.atlassian.net/*), try passing the site hostname (e.g. site.atlassian.net) as cloudId to other tools first; if that fails, use this tool to list accessible resources."
+    params: {}
+  - name: search
+    description: "Search Jira and Confluence using Rovo Search, ALWAYS use this tool to search for Jira and Confluence content unless the word CQL or JQL is used in the context"
+    params:
+      cloudId: Not needed for this tool — cloudId is derived from your access token automatically
+      query: The search query to use for Rovo Search
+  - name: fetch
+    description: "Get details of a Jira issue or Confluence page by ARI (Atlassian Resource Identifier), if the id is not an ARI, then use a different tool to fetch the content"
+    params:
+      cloudId: Not needed for this tool — cloudId is extracted from the ARI automatically
+      id: "Atlassian Resource Identifier (ARI) from search results, e.g., \"ari:cloud:jira:cloudId:issue/10107\" or \"ari:cloud:confluence:cloudId:page/123456789\""
+  - name: getConfluenceSpaces
+    description: Get spaces
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      expand: Properties to expand
+      favoritedBy: User favorites
+      favourite: Favorite spaces only
+      ids: Space IDs
+      keys: Space keys
+      labels: Space labels
+      limit: "Max results (default: 25, max: 250)"
+      start: Start index
+      status: Space status
+      type: Space type
+  - name: getConfluencePage
+    description: "Get a Confluence page or blog post by ID, including body content."
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for page/comment body. Use \"html\" to write or read Confluence content as structured HTML. HTML supports standard blocks plus Confluence HTML+ data-type nodes: panels, status, task/decision lists, expands, layouts, cards, media, dates, mentions, macros/extensions, and sync blocks. HTML is round-trip safe and preserves inline comments and existing local IDs. It must follow valid ADF nesting rules: inline-only task/decision items, headings, and captions; no self-nesting panels, expands, tables, or blockquotes. Invalid HTML will be rejected with a descriptive error so you can retry. Use \"markdown\" for simplified plain text. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw)"
+  - name: getPagesInConfluenceSpace
+    description: Get pages or blog posts in a space
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      cursor: Pagination cursor
+      limit: "Max results (default: 25, max: 250)"
+      sort: Sort order
+      spaceId: Space ID
+      status: Page status
+      title: Title filter
+  - name: getConfluencePageDescendants
+    description: Get child pages of specified page
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      cursor: Pagination cursor
+      depth: Max depth
+      limit: Max descendants
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw)"
+  - name: createConfluencePage
+    description: Create a Confluence page or blog post
+    params:
+      body: "Page/comment body. When contentFormat is \"html\", use standard HTML for headings (<h1>-<h6>), paragraphs (<p>), tables (<table>/<thead>/<tbody>/<tr>/<th>/<td>), links (<a href=\"URL\">), code (<pre><code class=\"language-python\">), and lists (<ul>/<ol>/<li>). Confluence-specific HTML+ uses data-type attributes, not CSS classes: panels <div data-type=\"panel-info|panel-warning|panel-note|panel-success|panel-error\"><p>text</p></div>; status <span data-type=\"status\" data-color=\"green|red|yellow|blue|neutral|purple\">Label</span>; task list <ul data-type=\"task-list\"><li data-type=\"task-item\"><input type=\"checkbox\"> Item</li></ul>; decision list <ul data-type=\"decision-list\"><li data-type=\"decision-item\" data-state=\"DECIDED|UNDECIDED\">text</li></ul>; expand <details><summary>Title</summary><p>content</p></details>; layout <section data-type=\"layout-two-equal|layout-three-equal\"><div data-type=\"column\"><p>Column</p></div></section>; inline card <a href=\"URL\" data-card-appearance=\"inline\">text</a>; date <time datetime=\"YYYY-MM-DD\">label</time>; mention <span data-type=\"mention\" data-user-id=\"ACCOUNT_ID\">@Name</span>; inline placeholder <span data-type=\"placeholder\">prompt</span>; macro/extension <div data-type=\"extension|bodied-extension|multi-bodied-extension\" data-extension-key=\"KEY\" data-extension-type=\"TYPE\" data-parameters=\"JSON\"></div>; sync block <div data-type=\"sync-block|bodied-sync-block\" data-resource-id=\"ID\"></div>; media group <div data-type=\"media-group\"><div data-type=\"media\" data-media-type=\"file\" data-id=\"MEDIA_ID\" data-collection=\"COLLECTION\">file.pdf</div></div>; inline media <span data-type=\"media-inline\" data-media-id=\"MEDIA_ID\" data-media-collection=\"COLLECTION\">file.pdf</span>. For native Confluence macros use data-extension-type=\"com.atlassian.confluence.macro.core\" and never storage XML (<ac:structured-macro>). Omit macroId. Do not invent opaque IDs: only copy data-user-id, data-id, data-collection, data-media-id, data-media-collection, data-resource-id, and data-local-id from existing content or tool output; omit data-local-id on new nodes. Preserve existing data-local-id when editing fetched HTML. Tables support data-number-column, data-layout=\"default|center|wide|full-width\", data-display-mode=\"fixed\", data-width, row/col spans, data-colwidth, and cell data-background. Breakout supports data-breakout=\"wide|full-width\" on details, pre, section, and sync blocks. Follow ADF nesting: task/decision items, headings, and captions are inline-only; list items cannot contain headings/tables/panels/expands; panels cannot contain tables/expands/blockquotes/panels; table cells can contain headings, panels, lists, media, blockquote, decision list, and nested expand (<details data-type=\"nested-expand\">) but not nested tables or normal expand. Never wrap content in <html>, <head>, or <body> tags."
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for page/comment body. Use \"html\" to write or read Confluence content as structured HTML. HTML supports standard blocks plus Confluence HTML+ data-type nodes: panels, status, task/decision lists, expands, layouts, cards, media, dates, mentions, macros/extensions, and sync blocks. HTML is round-trip safe and preserves inline comments and existing local IDs. It must follow valid ADF nesting rules: inline-only task/decision items, headings, and captions; no self-nesting panels, expands, tables, or blockquotes. Invalid HTML will be rejected with a descriptive error so you can retry. Use \"markdown\" for simplified plain text. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      isPrivate: Make private
+      parentId: "ID of the parent to nest the new page under. Accepts the ID of any container that can hold a page — a page, folder, whiteboard, database, embed, or slide (smart links surface as embeds). Applies to pages only; ignored for blog posts."
+      spaceId: "Numeric space ID (a Long, e.g. \"131073\"). A space key (e.g. \"ENG\") or personal-space key (e.g. \"~712020abc\") is also accepted and resolved to the numeric ID automatically."
+      status: Status (draft for unpublished)
+      subtype: "Page subtype (pages only, ignored for blogs)"
+      title: Page or blog post title
+  - name: updateConfluencePage
+    description: Update a Confluence page or blog post
+    params:
+      body: "Page/comment body. When contentFormat is \"html\", use standard HTML for headings (<h1>-<h6>), paragraphs (<p>), tables (<table>/<thead>/<tbody>/<tr>/<th>/<td>), links (<a href=\"URL\">), code (<pre><code class=\"language-python\">), and lists (<ul>/<ol>/<li>). Confluence-specific HTML+ uses data-type attributes, not CSS classes: panels <div data-type=\"panel-info|panel-warning|panel-note|panel-success|panel-error\"><p>text</p></div>; status <span data-type=\"status\" data-color=\"green|red|yellow|blue|neutral|purple\">Label</span>; task list <ul data-type=\"task-list\"><li data-type=\"task-item\"><input type=\"checkbox\"> Item</li></ul>; decision list <ul data-type=\"decision-list\"><li data-type=\"decision-item\" data-state=\"DECIDED|UNDECIDED\">text</li></ul>; expand <details><summary>Title</summary><p>content</p></details>; layout <section data-type=\"layout-two-equal|layout-three-equal\"><div data-type=\"column\"><p>Column</p></div></section>; inline card <a href=\"URL\" data-card-appearance=\"inline\">text</a>; date <time datetime=\"YYYY-MM-DD\">label</time>; mention <span data-type=\"mention\" data-user-id=\"ACCOUNT_ID\">@Name</span>; inline placeholder <span data-type=\"placeholder\">prompt</span>; macro/extension <div data-type=\"extension|bodied-extension|multi-bodied-extension\" data-extension-key=\"KEY\" data-extension-type=\"TYPE\" data-parameters=\"JSON\"></div>; sync block <div data-type=\"sync-block|bodied-sync-block\" data-resource-id=\"ID\"></div>; media group <div data-type=\"media-group\"><div data-type=\"media\" data-media-type=\"file\" data-id=\"MEDIA_ID\" data-collection=\"COLLECTION\">file.pdf</div></div>; inline media <span data-type=\"media-inline\" data-media-id=\"MEDIA_ID\" data-media-collection=\"COLLECTION\">file.pdf</span>. For native Confluence macros use data-extension-type=\"com.atlassian.confluence.macro.core\" and never storage XML (<ac:structured-macro>). Omit macroId. Do not invent opaque IDs: only copy data-user-id, data-id, data-collection, data-media-id, data-media-collection, data-resource-id, and data-local-id from existing content or tool output; omit data-local-id on new nodes. Preserve existing data-local-id when editing fetched HTML. Tables support data-number-column, data-layout=\"default|center|wide|full-width\", data-display-mode=\"fixed\", data-width, row/col spans, data-colwidth, and cell data-background. Breakout supports data-breakout=\"wide|full-width\" on details, pre, section, and sync blocks. Follow ADF nesting: task/decision items, headings, and captions are inline-only; list items cannot contain headings/tables/panels/expands; panels cannot contain tables/expands/blockquotes/panels; table cells can contain headings, panels, lists, media, blockquote, decision list, and nested expand (<details data-type=\"nested-expand\">) but not nested tables or normal expand. Never wrap content in <html>, <head>, or <body> tags."
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for page/comment body. Use \"html\" to write or read Confluence content as structured HTML. HTML supports standard blocks plus Confluence HTML+ data-type nodes: panels, status, task/decision lists, expands, layouts, cards, media, dates, mentions, macros/extensions, and sync blocks. HTML is round-trip safe and preserves inline comments and existing local IDs. It must follow valid ADF nesting rules: inline-only task/decision items, headings, and captions; no self-nesting panels, expands, tables, or blockquotes. Invalid HTML will be rejected with a descriptive error so you can retry. Use \"markdown\" for simplified plain text. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      includeBody: "If true, include the page body in the response; if false, omit it to reduce payload size."
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw)"
+      parentId: "ID of the parent to move the page under. Accepts the ID of any container that can hold a page — a page, folder, whiteboard, database, embed, or slide (smart links surface as embeds). Applies to pages only; ignored for blog posts."
+      spaceId: "Optional numeric space ID (a Long, e.g. \"131073\"). A space key (e.g. \"ENG\") or personal-space key (e.g. \"~712020abc\") is also accepted and resolved to the numeric ID automatically. Provide only for an actual move; omit when the space is unchanged."
+      status: Page status
+      title: New title
+      versionMessage: Version message
+  - name: getConfluencePageFooterComments
+    description: Get footer comments for a page or blog post
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      cursor: Pagination cursor
+      includeReplies: "When true, also return reply comments"
+      limit: Max comments
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw)"
+      repliesPerComment: Number of replies to return per comment
+      sort: Sort order
+      status: Comment status
+  - name: getConfluencePageInlineComments
+    description: Get inline comments for a page or blog post
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      cursor: Pagination cursor
+      includeReplies: "When true, also return reply comments"
+      limit: Max comments
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw)"
+      repliesPerComment: Number of replies to return per comment
+      resolutionStatus: Resolution status
+      sort: Sort order
+      status: Comment status
+  - name: getConfluenceCommentChildren
+    description: Get reply(child) comments for a comment
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      commentId: Parent comment ID
+      commentType: Comment type
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      cursor: Pagination cursor
+      limit: Max replies
+      sort: Sort order
+  - name: createConfluenceFooterComment
+    description: Create a footer comment on a page or blog post
+    params:
+      attachmentId: Attachment ID to include
+      body: "Page/comment body. When contentFormat is \"html\", use standard HTML for headings (<h1>-<h6>), paragraphs (<p>), tables (<table>/<thead>/<tbody>/<tr>/<th>/<td>), links (<a href=\"URL\">), code (<pre><code class=\"language-python\">), and lists (<ul>/<ol>/<li>). Confluence-specific HTML+ uses data-type attributes, not CSS classes: panels <div data-type=\"panel-info|panel-warning|panel-note|panel-success|panel-error\"><p>text</p></div>; status <span data-type=\"status\" data-color=\"green|red|yellow|blue|neutral|purple\">Label</span>; task list <ul data-type=\"task-list\"><li data-type=\"task-item\"><input type=\"checkbox\"> Item</li></ul>; decision list <ul data-type=\"decision-list\"><li data-type=\"decision-item\" data-state=\"DECIDED|UNDECIDED\">text</li></ul>; expand <details><summary>Title</summary><p>content</p></details>; layout <section data-type=\"layout-two-equal|layout-three-equal\"><div data-type=\"column\"><p>Column</p></div></section>; inline card <a href=\"URL\" data-card-appearance=\"inline\">text</a>; date <time datetime=\"YYYY-MM-DD\">label</time>; mention <span data-type=\"mention\" data-user-id=\"ACCOUNT_ID\">@Name</span>; inline placeholder <span data-type=\"placeholder\">prompt</span>; macro/extension <div data-type=\"extension|bodied-extension|multi-bodied-extension\" data-extension-key=\"KEY\" data-extension-type=\"TYPE\" data-parameters=\"JSON\"></div>; sync block <div data-type=\"sync-block|bodied-sync-block\" data-resource-id=\"ID\"></div>; media group <div data-type=\"media-group\"><div data-type=\"media\" data-media-type=\"file\" data-id=\"MEDIA_ID\" data-collection=\"COLLECTION\">file.pdf</div></div>; inline media <span data-type=\"media-inline\" data-media-id=\"MEDIA_ID\" data-media-collection=\"COLLECTION\">file.pdf</span>. For native Confluence macros use data-extension-type=\"com.atlassian.confluence.macro.core\" and never storage XML (<ac:structured-macro>). Omit macroId. Do not invent opaque IDs: only copy data-user-id, data-id, data-collection, data-media-id, data-media-collection, data-resource-id, and data-local-id from existing content or tool output; omit data-local-id on new nodes. Preserve existing data-local-id when editing fetched HTML. Tables support data-number-column, data-layout=\"default|center|wide|full-width\", data-display-mode=\"fixed\", data-width, row/col spans, data-colwidth, and cell data-background. Breakout supports data-breakout=\"wide|full-width\" on details, pre, section, and sync blocks. Follow ADF nesting: task/decision items, headings, and captions are inline-only; list items cannot contain headings/tables/panels/expands; panels cannot contain tables/expands/blockquotes/panels; table cells can contain headings, panels, lists, media, blockquote, decision list, and nested expand (<details data-type=\"nested-expand\">) but not nested tables or normal expand. Never wrap content in <html>, <head>, or <body> tags."
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for page/comment body. Use \"html\" to write or read Confluence content as structured HTML. HTML supports standard blocks plus Confluence HTML+ data-type nodes: panels, status, task/decision lists, expands, layouts, cards, media, dates, mentions, macros/extensions, and sync blocks. HTML is round-trip safe and preserves inline comments and existing local IDs. It must follow valid ADF nesting rules: inline-only task/decision items, headings, and captions; no self-nesting panels, expands, tables, or blockquotes. Invalid HTML will be rejected with a descriptive error so you can retry. Use \"markdown\" for simplified plain text. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      customContentId: Custom content ID to include
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw)"
+      parentCommentId: Parent comment ID for replies
+  - name: createConfluenceInlineComment
+    description: "Create an inline comment on specific text in a page or blog post. For top-level comments, provide pageId and inlineCommentProperties (text selection + match counts). For replies, provide parentCommentId only (no pageId or inlineCommentProperties). You must first fetch the page content (e.g. using getConfluencePage) to find the exact text and count how many times it appears. Incorrect or missing inlineCommentProperties can result in a 400 error from the Confluence API."
+    params:
+      body: "Page/comment body. When contentFormat is \"html\", use standard HTML for headings (<h1>-<h6>), paragraphs (<p>), tables (<table>/<thead>/<tbody>/<tr>/<th>/<td>), links (<a href=\"URL\">), code (<pre><code class=\"language-python\">), and lists (<ul>/<ol>/<li>). Confluence-specific HTML+ uses data-type attributes, not CSS classes: panels <div data-type=\"panel-info|panel-warning|panel-note|panel-success|panel-error\"><p>text</p></div>; status <span data-type=\"status\" data-color=\"green|red|yellow|blue|neutral|purple\">Label</span>; task list <ul data-type=\"task-list\"><li data-type=\"task-item\"><input type=\"checkbox\"> Item</li></ul>; decision list <ul data-type=\"decision-list\"><li data-type=\"decision-item\" data-state=\"DECIDED|UNDECIDED\">text</li></ul>; expand <details><summary>Title</summary><p>content</p></details>; layout <section data-type=\"layout-two-equal|layout-three-equal\"><div data-type=\"column\"><p>Column</p></div></section>; inline card <a href=\"URL\" data-card-appearance=\"inline\">text</a>; date <time datetime=\"YYYY-MM-DD\">label</time>; mention <span data-type=\"mention\" data-user-id=\"ACCOUNT_ID\">@Name</span>; inline placeholder <span data-type=\"placeholder\">prompt</span>; macro/extension <div data-type=\"extension|bodied-extension|multi-bodied-extension\" data-extension-key=\"KEY\" data-extension-type=\"TYPE\" data-parameters=\"JSON\"></div>; sync block <div data-type=\"sync-block|bodied-sync-block\" data-resource-id=\"ID\"></div>; media group <div data-type=\"media-group\"><div data-type=\"media\" data-media-type=\"file\" data-id=\"MEDIA_ID\" data-collection=\"COLLECTION\">file.pdf</div></div>; inline media <span data-type=\"media-inline\" data-media-id=\"MEDIA_ID\" data-media-collection=\"COLLECTION\">file.pdf</span>. For native Confluence macros use data-extension-type=\"com.atlassian.confluence.macro.core\" and never storage XML (<ac:structured-macro>). Omit macroId. Do not invent opaque IDs: only copy data-user-id, data-id, data-collection, data-media-id, data-media-collection, data-resource-id, and data-local-id from existing content or tool output; omit data-local-id on new nodes. Preserve existing data-local-id when editing fetched HTML. Tables support data-number-column, data-layout=\"default|center|wide|full-width\", data-display-mode=\"fixed\", data-width, row/col spans, data-colwidth, and cell data-background. Breakout supports data-breakout=\"wide|full-width\" on details, pre, section, and sync blocks. Follow ADF nesting: task/decision items, headings, and captions are inline-only; list items cannot contain headings/tables/panels/expands; panels cannot contain tables/expands/blockquotes/panels; table cells can contain headings, panels, lists, media, blockquote, decision list, and nested expand (<details data-type=\"nested-expand\">) but not nested tables or normal expand. Never wrap content in <html>, <head>, or <body> tags."
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for page/comment body. Use \"html\" to write or read Confluence content as structured HTML. HTML supports standard blocks plus Confluence HTML+ data-type nodes: panels, status, task/decision lists, expands, layouts, cards, media, dates, mentions, macros/extensions, and sync blocks. HTML is round-trip safe and preserves inline comments and existing local IDs. It must follow valid ADF nesting rules: inline-only task/decision items, headings, and captions; no self-nesting panels, expands, tables, or blockquotes. Invalid HTML will be rejected with a descriptive error so you can retry. Use \"markdown\" for simplified plain text. Defaults vary by tool when omitted."
+      contentType: "Type of content: page or blog post"
+      inlineCommentProperties: "Required for top-level inline comments (not replies). Provide textSelection, textSelectionMatchCount (total occurrences on the page), and textSelectionMatchIndex (0-based, must be < textSelectionMatchCount)."
+      pageId: "Page or blog post ID, or a Confluence tiny link ID (the encoded part from /wiki/x/ URLs, e.g., Fc1bBw). Use for top-level inline comments only; do not provide with parentCommentId."
+      parentCommentId: "Parent comment ID for replies. When provided, this creates a reply to an existing inline comment thread. Do not provide pageId or inlineCommentProperties."
+  - name: searchConfluenceUsingCql
+    description: "Search Confluence content (pages, blog posts, comments, attachments) using CQL (Confluence Query Language). CQL is specific to Confluence and is not interchangeable with JQL."
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      cql: "CQL (Confluence Query Language) query string. CQL is specific to Confluence and is not JQL. Common fields: title, text, space, type, creator, contributor, label, ancestor, parent, lastmodified, created, mention, watcher, space.title, space.key. Use space key (not name) for the space field; use space.title ~ \"name\" for name search. Content types: page, blogpost, comment, attachment. Escape inner quotes with backslash: title ~ \"Q2 \\\"planning\\\" review\". Examples: title ~ \"meeting notes\" AND type = page | space.title ~ \"Engineering\" AND lastmodified >= now(\"-2w\") AND type = page | creator = currentUser() AND type = page | text ~ \"Q2 \\\"planning\\\" review\" AND type = page"
+      cqlcontext: "CQL context for narrowing search scope (e.g., spaceKey)"
+      cursor: Pagination cursor
+      expand: Properties to expand
+      limit: "Max results (default: 25, max: 250)"
+      next: Include next page link
+      prev: Include previous page link
+  - name: getJiraIssue
+    description: Get issue details
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      expand: "Additional issue details to expand in the response (for example, renderedFields or names)."
+      failFast: Whether to fail quickly when some fields cannot be loaded instead of partially returning data.
+      fields: "Issue fields to return. When omitted or empty, defaults to: summary, description, status, issuetype, priority, labels, components, assignee, reporter, created, updated, resolution, project. Pass \"*all\" to return every field (including custom fields). Include \"comment\" to fetch issue comments in fields.comment.comments."
+      fieldsByKeys: Whether fields in the request are referenced by field keys instead of IDs.
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+      properties: Issue property keys to include in the response.
+      responseContentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      updateHistory: "Whether to update the user's recently viewed projects/history for this issue request."
+  - name: createJiraIssue
+    description: "Create a Jira issue. Use additional_fields to set any Jira field that does not have its own parameter (e.g. custom fields, priority, components)."
+    params:
+      additional_fields: "REQUIRED for custom fields. This is the ONLY parameter to set priority, labels, custom fields, components, fix versions, or any other Jira fields not listed above. Pass a JSON object with field names as keys. Examples: {\"components\": [{\"name\": \"Backend\"}]}, {\"fixVersions\": [{\"name\": \"v1.2\"}]}, {\"priority\": {\"name\": \"High\"}}, {\"labels\": [\"bug\"]}, {\"customfield_10001\": \"value\"}."
+      assignee_account_id: Assignee ID
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      description: "Issue description. With contentFormat \"markdown\" (default), pass plain text or Markdown as a string. With contentFormat \"adf\", pass an ADF JSON string or a document object with type \"doc\"."
+      issueTypeName: "Type (Task, Bug, Story)"
+      parent: Parent for subtasks
+      projectKey: Project key
+      responseContentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      summary: Issue summary/title
+      transition: "Optional workflow transition to apply during creation. Use getTransitionsForJiraIssue to find valid transition IDs. Placed at top level of Jira API request, not inside fields."
+  - name: editJiraIssue
+    description: "Update issue. After updating, returns the issue using the same default read fields as getJiraIssue (summary, description, status, issuetype, priority, labels, components, assignee, reporter, created, updated, resolution, project). Use getJiraIssue with fields [\"all\"] or a custom list if you need more."
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      fields: "Fields to set, keyed by field name or customfield_* ID. To CLEAR a field, pass an explicit null, e.g. { \"resolution\": null }. Clearing the resolution is the fix when a reopened issue is blocked from transitioning because it still has a Resolution set."
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+      responseContentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+  - name: addCommentToJiraIssue
+    description: Add or update a comment on a Jira issue
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      commentBody: Comment body
+      commentId: "ID of an existing comment to update. If omitted, a new comment is added."
+      commentVisibility: "Restrict visibility to a group or role with type ('group', 'role') and value (group/role name)"
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+      responseContentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+  - name: addWorklogToJiraIssue
+    description: "Add or update a worklog on a Jira issue. When worklogId is provided, updates that worklog;"
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      commentBody: Comment body
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+      started: "When the work was started (ISO 8601 date-time, e.g. 2026-03-09T09:00:00.000+0000). If omitted, the worklog is booked at the current date/time."
+      timeSpent: "Time spent (e.g. 2h, 30m, 4d). Required for new worklogs; use to set or change time when updating."
+      visibility: "Restrict visibility to a group or role with type ('group', 'role') and value (group/role name)"
+      worklogId: "ID of an existing worklog to update. If omitted, a new worklog is created."
+  - name: getJiraIssueRemoteIssueLinks
+    description: Get remote links
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      globalId: "An identifier for the remote item (e.g., 'appId=456&pageId=123'). When provided, returns only the link with this global ID"
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+  - name: getIssueLinkTypes
+    description: "Get available Jira issue link types (e.g. Blocks, Duplicate, Clones, Relates). For createIssueLink: inwardIssue = blocker, outwardIssue = blocked (e.g. \"A is blocked by B\" → inwardIssue: B, outwardIssue: A)."
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+  - name: createIssueLink
+    description: "Create a link between two Jira issues. For directional link types (e.g. Blocks): inwardIssue = issue that blocks, outwardIssue = issue that is blocked (e.g. \"A is blocked by B\" → inwardIssue: B, outwardIssue: A). Use getIssueLinkTypes if link type is unknown."
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      comment: Optional comment on the outward issue.
+      contentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      inwardIssue: Inward issue key (e.g. HSP-1).
+      outwardIssue: Outward issue key (e.g. MKY-1).
+      type: "Link type name (e.g. Duplicate, Blocks, Clones, Relates). Use getIssueLinkTypes to list available types."
+  - name: getTransitionsForJiraIssue
+    description: Get transitions
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      expand: Additional properties to expand
+      includeUnavailableTransitions: Whether to include transitions that are not available to the current user
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+      skipRemoteOnlyCondition: Whether to skip remote-only conditions
+      sortByOpsBarAndStatus: Whether to sort transitions by ops bar and status
+      transitionId: Filter to specific transition
+  - name: transitionJiraIssue
+    description: Transition issue status
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      fields: Additional fields to update during transition
+      historyMetadata: Additional history metadata for the transition
+      issueIdOrKey: "Issue ID or key (e.g., PROJ-123 or 10000)"
+      transition: "Transition object with id (required) - use 'getTransitionsForJiraIssue' to find available transitions"
+      update: Operations to perform on issue fields (list of operations per field)
+  - name: getVisibleJiraProjects
+    description: Get projects
+    params:
+      action: "Filter by permission type (view, browse, edit, create) - default: create"
+      cloudId: Cloud ID (UUID or site URL)
+      expandIssueTypes: Include additional information about issue types (default - true)
+      maxResults: "Maximum items to return per page (max: 50, default: 50)"
+      searchString: Filter using literal string. Projects with matching key or name are returned (case insensitive)
+      startAt: "Index of first item to return (page offset, default - 0)"
+  - name: getJiraProjectIssueTypesMetadata
+    description: Get issue types
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      maxResults: "Maximum items to return per page (max: 200, default: 50)"
+      projectIdOrKey: Project ID or key
+      startAt: "Index of first item to return (page offset, default - 0)"
+  - name: getJiraIssueTypeMetaWithFields
+    description: Get field metadata
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      issueTypeId: The ID of the issue type
+      maxResults: "Maximum items to return per page (max: 200, default: 50)"
+      projectIdOrKey: The ID or key of the project
+      requiredFieldsOnly: "When true (default), returns only the fields that are required to create an issue of this type, reducing response size. Set to false to return all available fields (both required and optional)."
+      startAt: "Index of first item to return (page offset, default - 0)"
+  - name: searchJiraIssuesUsingJql
+    description: "Search issues with JQL, total counts only when explicitly requested."
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      fields: "Issue fields to return. When omitted or empty, defaults to: summary, description, status, issuetype, priority, labels, components, assignee, reporter, created, updated, resolution, project. Pass \"*all\" to return every field (including custom fields). Include \"comment\" to fetch issue comments in fields.comment.comments."
+      jql: JQL query
+      maxResults: Max (50-100)
+      nextPageToken: Page token
+      responseContentFormat: "Content format for body content. Use \"markdown\" for simplified plain text. Use \"adf\" (Atlassian Document Format, JSON) for full programmatic fidelity. Defaults vary by tool when omitted."
+      searchResultMode: "Default \"issues\". Never count for normal search or if nextPageToken used. If total for same query is known, reuse it. Use \"count\" only when no trusted count exists and either the user asks or a downstream step needs it. Use \"all\" only if both count and issues required."
+  - name: lookupJiraAccountId
+    description: Lookup user IDs
+    params:
+      cloudId: Cloud ID (UUID or site URL)
+      searchString: Display name or email address to search for

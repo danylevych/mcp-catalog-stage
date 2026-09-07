@@ -1,0 +1,124 @@
+name: Google Docs
+entryKey: google-docs
+serverUserType: singleUser
+shortDescription: Create and manage documents in Google Docs
+description: |
+  ![Google Docs MCP Server](https://img.shields.io/badge/Google%20Docs-MCP%20Server-blue?style=for-the-badge&logo=google-docs)
+  ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
+  ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.2+-orange?style=for-the-badge)
+  ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+  
+  A Model Context Protocol (MCP) server for Google Docs integration, providing comprehensive document management capabilities.
+  
+  ## Features
+  - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
+  - **Document Management**: Create, read, modify, and delete documents with full lifecycle control
+  - **Formatting & Layout**: Format text, modify paragraph styles, insert tables, and manage text positions
+  - **Batch Operations**: Execute raw API batch updates for advanced document manipulation
+  
+  ## What you'll need to connect
+  
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
+
+metadata:
+  categories: "Business"
+  allow-multiple: "true"
+  # Deployed by obot's hosted MCP feature (pkg/hostedmcp). Obot ignores keys it
+  # does not know, so these ride along with the manifest through the catalog
+  # sync and the service is described in exactly one place.
+  #
+  # hostedmcp-port is the host port the OAuth proxy is published on. It is not
+  # the same fact as fixedURL below, which is how obot and the browser reach
+  # the proxy and may well be a reverse-proxied hostname with no port in it.
+  hostedmcp: "true"
+  hostedmcp-port: "8081"
+  hostedmcp-scopes: "openid,profile,email,https://www.googleapis.com/auth/documents,https://www.googleapis.com/auth/drive"
+  hostedmcp-google-apis: "docs.googleapis.com,drive.googleapis.com"
+  # The repository this service's image lives in. The registry and tag come
+  # from the deployment (OBOT_HOSTED_MCP_APP_IMAGE), so the same file serves
+  # every environment.
+  # The variable that carries this service's public address. It changes from
+  # one deployment to the next, so only its name can live here.
+  hostedmcp-url-env: "MCP_URL_GOOGLE_DOCS"
+  hostedmcp-image-name: "docs"
+icon: https://img.icons8.com/color/96/google-docs--v1.png
+repoURL: https://github.com/obot-platform/google-mcp/tree/main/docs
+runtime: remote
+remoteConfig:
+  # Replaced at runtime with MCP_URL_GOOGLE_DOCS. This value only has to satisfy the
+  # catalog sync, which requires a fixedURL and resolves its hostname — hence a
+  # real domain rather than something obviously fake. Nothing serves MCP there,
+  # so a connection that reaches it means the variable is missing.
+  fixedURL: https://example.com/mcp
+toolPreview:
+  - name: append_text
+    description: Append text to the end of a Google Docs document.
+    params:
+      document_id: ID of the Google Docs document
+      text: Text to append to the end of the document
+  - name: batch_update_document
+    description: Execute a batch update on a Google Docs document with raw API requests. Use this for advanced operations not covered by other tools.
+    params:
+      document_id: ID of the Google Docs document
+      requests: "List of Google Docs API request objects. See https://developers.google.com/docs/api/reference/rest/v1/documents/batchUpdate for request format."
+  - name: create_document
+    description: Create a new Google Docs document. Optionally insert initial text content.
+    params:
+      initial_content: Optional initial text content to insert into the document.
+      title: Title for the new document
+  - name: delete_content
+    description: Delete content within a range in a Google Docs document.
+    params:
+      document_id: ID of the Google Docs document
+      end_index: End index of the content range to delete
+      start_index: Start index of the content range to delete
+  - name: format_text
+    description: Format text in a Google Docs document. Specify only the formatting properties you want to change.
+    params:
+      bold: Set bold formatting
+      document_id: ID of the Google Docs document
+      end_index: End index of the text range to format
+      font_family: "Font family name (e.g., 'Arial', 'Times New Roman')"
+      font_size: Font size in points
+      italic: Set italic formatting
+      start_index: Start index of the text range to format
+      strikethrough: Set strikethrough formatting
+      underline: Set underline formatting
+  - name: get_document
+    description: "Get a Google Docs document and return its content as markdown. Returns the document title, markdown content, and revision ID."
+    params:
+      document_id: ID of the Google Docs document to retrieve
+  - name: insert_table
+    description: Insert a table at a specific position in a Google Docs document.
+    params:
+      columns: Number of columns in the table
+      document_id: ID of the Google Docs document
+      index: The character index to insert the table at. Index 1 is the beginning of the document body.
+      rows: Number of rows in the table
+  - name: insert_text
+    description: Insert text at a specific position in a Google Docs document.
+    params:
+      document_id: ID of the Google Docs document
+      index: The character index to insert text at. Index 1 is the beginning of the document body.
+      text: Text to insert
+  - name: list_documents
+    description: "List Google Docs documents in the user's Google Drive. Returns a list of documents and a nextPageToken for pagination."
+    params:
+      file_name_contains: Case-insensitive search string to filter documents by name.
+      max_results: Maximum number of documents to return
+      page_token: "Token for pagination, pass the nextPageToken from the previous response to get the next page."
+  - name: replace_text
+    description: Replace all occurrences of a text string in a Google Docs document.
+    params:
+      document_id: ID of the Google Docs document
+      find_text: Text to find in the document
+      match_case: Whether the search is case-sensitive
+      replace_text: Text to replace with
+  - name: set_paragraph_style
+    description: Set paragraph style in a Google Docs document. Specify a named style type and/or alignment.
+    params:
+      alignment: "Paragraph alignment (e.g., 'START', 'CENTER', 'END', 'JUSTIFIED')"
+      document_id: ID of the Google Docs document
+      end_index: End index of the paragraph range
+      named_style_type: "Named style type (e.g., 'HEADING_1', 'HEADING_2', 'NORMAL_TEXT', 'SUBTITLE', 'TITLE')"
+      start_index: Start index of the paragraph range

@@ -1,0 +1,133 @@
+name: Google Sheets
+entryKey: google-sheets
+serverUserType: singleUser
+shortDescription: "Create and manage Google Sheets spreadsheets, worksheets, cells, and formulas"
+description: |
+  ![Google Sheets MCP Server](https://img.shields.io/badge/Google%20Sheets-MCP%20Server-blue?style=for-the-badge&logo=google-sheets)
+  ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
+  ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
+  ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+  
+  A Model Context Protocol (MCP) server for Google Sheets integration, providing comprehensive spreadsheet management capabilities through a modern API interface.
+  
+  ## Features
+  - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
+  - **Spreadsheet Management**: Create, read, and delete spreadsheets with full lifecycle control
+  - **Worksheet Operations**: Create and manage individual worksheets (tabs) within spreadsheets
+  - **Cell Operations**: Update individual cells and ranges with values and formulas
+  - **Formula Support**: Apply formula templates with dynamic placeholders across ranges
+  - **Data Management**: Append rows and clear ranges with automatic sheet expansion
+  - **Table Reading**: Read spreadsheet data as structured tables or raw cell values
+  
+  ## What you'll need to connect
+  
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
+
+metadata:
+  categories: "Business"
+  allow-multiple: "true"
+  # Deployed by obot's hosted MCP feature (pkg/hostedmcp). Obot ignores keys it
+  # does not know, so these ride along with the manifest through the catalog
+  # sync and the service is described in exactly one place.
+  #
+  # hostedmcp-port is the host port the OAuth proxy is published on. It is not
+  # the same fact as fixedURL above, which is how obot and the browser reach
+  # the proxy and may well be a reverse-proxied hostname with no port in it.
+  hostedmcp: "true"
+  hostedmcp-port: "8085"
+  hostedmcp-scopes: "openid,profile,email,https://www.googleapis.com/auth/drive.readonly,https://www.googleapis.com/auth/drive.file,https://www.googleapis.com/auth/spreadsheets"
+  hostedmcp-google-apis: "sheets.googleapis.com,drive.googleapis.com"
+  # Defaults to Google when absent. Set it for a server that authenticates
+  # somewhere else, e.g. https://login.microsoftonline.com/common/v2.0
+  # hostedmcp-authorize-url: "https://accounts.google.com"
+  # The repository this service's image lives in. The registry and tag come
+  # from the deployment (OBOT_HOSTED_MCP_APP_IMAGE), so the same file serves
+  # every environment.
+  # The variable that carries this service's public address. It changes from
+  # one deployment to the next, so only its name can live here.
+  hostedmcp-url-env: "MCP_URL_GOOGLE_SHEETS"
+  hostedmcp-image-name: "sheets"
+icon: https://img.icons8.com/?size=100&id=qrAVeBIrsjod&format=png&color=000000
+repoURL: https://github.com/obot-platform/google-mcp/tree/main/sheets
+runtime: remote
+remoteConfig:
+  # Replaced at runtime with MCP_URL_GOOGLE_SHEETS. This value only has to satisfy the
+  # catalog sync, which requires a fixedURL and resolves its hostname — hence a
+  # real domain rather than something obviously fake. Nothing serves MCP there,
+  # so a connection that reaches it means the variable is missing.
+  fixedURL: https://example.com/mcp
+toolPreview:
+  - name: append_row
+    description: |
+      Append a new row to the end of existing data in a spreadsheet.
+      Automatically finds the next empty row and adds the data there.
+    params:
+      row_values: "Values to append as a new row. Each value will be placed in sequential columns (A, B, C, etc.)"
+      spreadsheet_id: The ID of the spreadsheet to append to.
+      worksheet_name: "The name of the worksheet to append to. If not provided, the first worksheet will be appended to."
+  - name: clear_range
+    description: |
+      Clear content from a range of cells in a spreadsheet.
+      Removes values but preserves formatting.
+    params:
+      cell_range: "Range of cells to clear in A1 notation (e.g., 'A1:C10', 'D2:D100')"
+      spreadsheet_id: The ID of the spreadsheet to clear data from.
+      worksheet_name: "The name of the worksheet to clear data from. If not provided, the first worksheet will be used."
+  - name: create_spreadsheet
+    description: |
+      Create a new spreadsheet in the user's personal Google Drive.
+      Returns the ID of the created spreadsheet.
+    params:
+      spreadsheet_name: The name of the spreadsheet to create.
+  - name: create_worksheet
+    description: |
+      Create a new worksheet (tab) in an existing spreadsheet.
+      Returns the ID of the created worksheet.
+    params:
+      cols: Number of columns for the new worksheet.
+      rows: Number of rows for the new worksheet.
+      spreadsheet_id: The ID of the spreadsheet to create a worksheet in.
+      worksheet_name: The name of the new worksheet.
+  - name: delete_spreadsheet
+    description: Delete a spreadsheet by its ID. The operation is only valid for spreadsheets owned by the user.
+    params:
+      spreadsheet_id: The ID of the spreadsheet to delete.
+  - name: list_spreadsheets
+    description: |
+      List spreadsheets(both owned and shared) in the user's Google Drive.
+      Returns a list of spreadsheets and a nextPageToken for pagination.
+    params:
+      max_results: Maximum number of results to return. default is 10.
+      page_token: "Token for pagination, pass the nextPageToken from the previous response to get the next page."
+  - name: list_worksheets
+    description: |
+      List all worksheets (tabs) in a specific spreadsheet.
+      Returns worksheet names, IDs, and basic properties.
+    params:
+      spreadsheet_id: The ID of the spreadsheet to list worksheets from.
+  - name: read_spreadsheet
+    description: |
+      Read a spreadsheet by its ID.
+      Returns a list of tables if `read_tables` is True, otherwise returns a list of dict, each dict contains the row number, column number, and value of the cells.
+    params:
+      cell_range: The range of cells of the worksheet to read.
+      read_tables: Whether to read the spreadsheet as tables. Cell ranges are not supported when reading tables.
+      spreadsheet_id: The ID of the spreadsheet to read.
+      worksheet_name: "The name of the worksheet to read. If not provided, the first worksheet will be read."
+  - name: update_cells
+    description: "Update cells in a spreadsheet. If the cell is out of bounds, the sheet will be automatically expanded to fit the cell."
+    params:
+      cells_to_update: List of cells to update. Each item specifies a cell address and its new value.
+      spreadsheet_id: The ID of the spreadsheet to update.
+      worksheet_name: "The name of the worksheet to update. If not provided, the first worksheet will be updated."
+  - name: update_range_with_formula
+    description: |
+      Efficiently fills a range of cells with formula templates.
+      If the range is out of bounds, the sheet will be automatically expanded to fit the range.
+      Supports placeholders: {row} for row number, {col} for column letter.
+      Automatically expands sheet if needed.
+    params:
+      formula_template: "Formula template with placeholders: {row} for row number, {col} for column letter. Must reference valid cells like 'B{row}', 'A{row}+C{row}', '{col}1', etc. Examples: '=B{row}-C{row}' or '={col}2*2'"
+      spreadsheet_id: The ID of the spreadsheet to update.
+      target_range: "Range to fill with formulas in A1 notation (e.g., 'D2:D100', 'A5:Z5')"
+      worksheet_name: "The name of the worksheet to update. If not provided, the first worksheet will be updated."

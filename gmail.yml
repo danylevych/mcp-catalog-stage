@@ -1,0 +1,159 @@
+name: Gmail
+entryKey: gmail
+serverUserType: singleUser
+shortDescription: "Send, read, draft, and organize Gmail emails with label management and search"
+description: |
+  ![Gmail MCP Server](https://img.shields.io/badge/Gmail-MCP%20Server-blue?style=for-the-badge&logo=gmail)
+  ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
+  ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
+  ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+  
+  A Model Context Protocol (MCP) server for Gmail integration, providing comprehensive email management capabilities through a modern API interface.
+  
+  ## Features
+  - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
+  - **Complete Email Management**: Read, send, draft, and organize emails with advanced filtering
+  - **Label Management**: Create, update, and manage Gmail labels and organization
+  - **Advanced Search**: Powerful query-based email filtering and search capabilities
+  - **Attachment Support**: List and manage email attachments
+  - **Draft Management**: Create, update, send, and delete draft emails
+  
+  ## What you'll need to connect
+  
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
+
+metadata:
+  categories: "Business"
+  allow-multiple: "true"
+  # Deployed by obot's hosted MCP feature (pkg/hostedmcp). Obot ignores keys it
+  # does not know, so these ride along with the manifest through the catalog
+  # sync and the service is described in exactly one place.
+  #
+  # hostedmcp-port is the host port the OAuth proxy is published on. It is not
+  # the same fact as fixedURL below, which is how obot and the browser reach
+  # the proxy and may well be a reverse-proxied hostname with no port in it.
+  hostedmcp: "true"
+  hostedmcp-port: "8082"
+  hostedmcp-scopes: "openid,profile,email,https://www.googleapis.com/auth/gmail.modify,https://www.googleapis.com/auth/gmail.labels,https://www.googleapis.com/auth/gmail.compose"
+  hostedmcp-google-apis: "gmail.googleapis.com"
+  # The repository this service's image lives in. The registry and tag come
+  # from the deployment (OBOT_HOSTED_MCP_APP_IMAGE), so the same file serves
+  # every environment.
+  # The variable that carries this service's public address. It changes from
+  # one deployment to the next, so only its name can live here.
+  hostedmcp-url-env: "MCP_URL_GMAIL"
+  hostedmcp-image-name: "gmail"
+icon: https://img.icons8.com/?size=100&id=P7UIlhbpWzZm&format=png&color=000000
+repoURL: https://github.com/obot-platform/google-mcp/tree/main/gmail
+runtime: remote
+remoteConfig:
+  # Replaced at runtime with MCP_URL_GMAIL. This value only has to satisfy the
+  # catalog sync, which requires a fixedURL and resolves its hostname — hence a
+  # real domain rather than something obviously fake. Nothing serves MCP there,
+  # so a connection that reaches it means the variable is missing.
+  fixedURL: https://example.com/mcp
+toolPreview:
+  - name: create_draft
+    description: "Create a draft email in the user's Gmail account."
+    params:
+      bcc_emails: Comma-separated list of email addresses to bcc the email to
+      cc_emails: Comma-separated list of email addresses to cc the email to
+      message: Message body of the email.
+      reply_all: Whether to reply to all
+      reply_to_email_id: The ID of the email to reply to
+      subject: Subject of the email.
+      to_emails: Comma-separated list of email addresses to send the email to.
+  - name: create_label
+    description: "Create a new label in the user's gmail account."
+    params:
+      label_list_visibility: Label list visibility
+      label_name: Name of the label to create.
+      message_list_visibility: Message list visibility
+  - name: delete_draft
+    description: "Delete a draft email in the user's Gmail account."
+    params:
+      draft_id: The ID of the draft to delete.
+  - name: delete_email
+    description: "Delete an email in the user's Gmail account (moves to trash)."
+    params:
+      email_id: The ID of the email to delete.
+  - name: delete_label
+    description: "Delete a label in the user's gmail account."
+    params:
+      label_id: ID of the label to delete.
+  - name: get_current_email_address
+    description: Gets the email address of the currently signed in user.
+    params: {}
+  - name: list_attachments
+    description: "List attachments in an email from a user's Gmail account."
+    params:
+      email_id: The ID of the email to list attachments from.
+  - name: list_drafts
+    description: "List drafts in the user's gmail account. at most 20 drafts are returned."
+    params:
+      max_results: Maximum number of drafts to return.
+  - name: list_emails
+    description: |
+      List emails in the user's gmail account.
+      If query is empty, list emails in the user's inbox.
+      Otherwise, list emails matching the given query from all labels.
+      Supports filtering by labels, category, and query.
+    params:
+      after: "To only return emails received strictly **after** this timestamp. Format: `YYYY-MM-DDTHH:MM:SS±HH:MM` (ISO 8601 format with timezone offset)"
+      before: "To only return emails received strictly **before** this timestamp. Format: `YYYY-MM-DDTHH:MM:SS±HH:MM` (ISO 8601 format with timezone offset)"
+      category: Category to filter emails by.
+      label_ids: Comma-separated list of label IDs to filter emails by.
+      max_results: Maximum number of emails to return.
+      query: "Search query in Gmail search syntax (e.g., 'from:someuser@example.com rfc822msgid:<somemsgid@example.com> is:unread'). Don't use `before` or `after` in the query. Prefer using `label_ids` and `category` instead. of adding them to the query."
+  - name: list_labels
+    description: "Fetch a specific label by ID if provided, otherwise list all labels."
+    params:
+      label_id: Label ID to fetch
+  - name: modify_message_labels
+    description: "Modify labels on a Gmail email or on all messages within the same thread. Supports marking an email or the entire thread as read or unread, archiving or unarchiving, starring or unstarring, marking as important or not important, and adding or removing custom labels."
+    params:
+      add_label_ids: List of label IDs to add
+      apply_action_to_thread: Whether to apply action to the whole thread
+      archive: Whether to archive the message
+      email_id: ID of the email message to modify labels for.
+      mark_as_important: Whether to mark the message as important
+      mark_as_read: Whether to mark the message as read
+      mark_as_starred: Whether to mark the message as starred
+      remove_label_ids: List of label IDs to remove
+  - name: read_email
+    description: "Read an email or draft from the user's Gmail account."
+    params:
+      email_id: "Email or Draft ID to read (Optional: If not provided, email_subject is required)"
+      email_subject: "Email subject to read (Optional: If not provided, email_id is required)"
+  - name: send_draft
+    description: "Send a draft email in the user's Gmail account."
+    params:
+      draft_id: The ID of the draft email to send.
+  - name: send_email
+    description: |
+      Send an email from the user's Gmail account.
+      Do not attempt to forward or reply to emails using this tool.
+    params:
+      bcc_emails: Comma-separated list of email addresses to bcc the email to (Optional)
+      cc_emails: Comma-separated list of email addresses to cc the email to (Optional)
+      message: Message body of the email.
+      subject: Subject of the email.
+      to_emails: Comma-separated list of email addresses to send the email to.
+  - name: update_draft
+    description: "Update a draft email in the user's Gmail account."
+    params:
+      bcc_emails: Comma-separated list of email addresses to bcc the email to
+      cc_emails: Comma-separated list of email addresses to cc the email to
+      draft_id: The ID of the draft email to update.
+      message: Message body of the email.
+      reply_all: Whether to reply to all
+      reply_to_email_id: The ID of the email to reply to
+      subject: Subject of the email.
+      to_emails: Comma-separated list of email addresses to send the email to.
+  - name: update_label
+    description: "Update an existing label in the user's gmail account."
+    params:
+      label_id: ID of the label to update.
+      label_list_visibility: Label list visibility
+      label_name: New name for the label
+      message_list_visibility: Message list visibility

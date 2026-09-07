@@ -1,0 +1,175 @@
+name: Datadog
+entryKey: datadog
+serverUserType: singleUser
+shortDescription: "Monitor incidents, logs, dashboards, metrics, APM traces, and infrastructure with Datadog"
+description: |
+  A Model Context Protocol (MCP) server that provides access to Datadog's monitoring and observability platform. This server enables AI agents to interact with key Datadog features including incidents, monitors, logs, dashboards, metrics, APM traces, infrastructure monitoring, and RUM analytics through a comprehensive set of tools.
+
+  ## Features
+  - **Observability Tools**: Leverage key Datadog monitoring features including incidents, monitors, logs, dashboards, and metrics through the MCP server
+  - **Extensible Design**: Designed to easily integrate with additional Datadog APIs, allowing for seamless future feature expansion
+
+  ## What you'll need to connect
+
+  **Required:**
+  - **Datadog API Key**: Your Datadog API key. API keys are unique to your organization. To create an API key, navigate to Organization settings, then click the `API keys`.
+  - **Datadog App Key**: Your Datadog application key. Application keys are associated with the user account that created them and by default have the permissions of the user who created them. To add a Datadog application key, navigate to Organization Settings > Application Keys. If you have the permission to create application keys, click New Key.
+
+  **Optional:**
+  - **Datadog Site**: The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`.
+
+metadata:
+  categories: "Monitoring & Observability, SaaS & API Integrations"
+icon: https://avatars.githubusercontent.com/u/365230?s=200&v=4
+repoURL: https://github.com/winor30/mcp-server-datadog
+runtime: containerized
+containerizedConfig:
+  image: ghcr.io/obot-platform/mcp-images/datadog:1.7.0
+  port: 8099
+  path: /
+  args:
+    - mcp-server-datadog
+env:
+  - name: Datadog API Key
+    key: DATADOG_API_KEY
+    description: Your Datadog API key. API keys are unique to your organization.
+    sensitive: true
+    required: true
+  - name: Datadog App Key
+    key: DATADOG_APP_KEY
+    description: Your Datadog application key. Application keys are associated with the user account that created them and by default have the permissions of the user who created them.
+    sensitive: true
+    required: true
+  - name: Datadog Site
+    key: DATADOG_SITE
+    description: "(Optional) The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`."
+    required: false
+toolPreview:
+  - name: cancel_downtime
+    description: Cancel a scheduled downtime in Datadog
+    params:
+      downtimeId: The ID of the downtime to cancel
+  - name: get_active_hosts_count
+    description: Get the total number of active hosts in Datadog (defaults to last 5 minutes)
+    params:
+      from: Number of seconds from which you want to get total number of active hosts (defaults to 2h)
+  - name: get_all_services
+    description: Extract all unique service names from logs
+    params:
+      from: Start time in epoch seconds
+      limit: Maximum number of logs to search through. Default is 1000.
+      query: Optional query filter for log search
+      to: End time in epoch seconds
+  - name: get_dashboard
+    description: Get a dashboard from Datadog
+    params:
+      dashboardId: The ID of the dashboard to fetch
+  - name: get_incident
+    description: Get an incident from Datadog
+    params:
+      incidentId: The ID of the incident to fetch
+  - name: get_logs
+    description: Search and retrieve logs from Datadog
+    params:
+      from: Start time in epoch seconds
+      limit: Maximum number of logs to return. Default is 100.
+      query: Datadog logs query string
+      to: End time in epoch seconds
+  - name: get_monitors
+    description: Get monitors status from Datadog
+    params:
+      groupStates: Filter monitors by their states
+      name: Filter monitors by name
+      tags: Filter monitors by tags
+  - name: get_rum_applications
+    description: Get all RUM applications in the organization
+    params: {}
+  - name: get_rum_events
+    description: Search and retrieve RUM events from Datadog
+    params:
+      from: Start time in epoch seconds
+      limit: Maximum number of events to return. Default is 100.
+      query: Datadog RUM query string
+      to: End time in epoch seconds
+  - name: get_rum_grouped_event_count
+    description: "Search, group and count RUM events by a specified dimension"
+    params:
+      from: Start time in epoch seconds
+      groupBy: Dimension to group results by. Default is application.name
+      query: Optional query filter for RUM search
+      to: End time in epoch seconds
+  - name: get_rum_page_performance
+    description: Get page (view) performance metrics from RUM data
+    params:
+      from: Start time in epoch seconds
+      metricNames: Array of metric names to retrieve
+      query: Optional query filter for RUM search
+      to: End time in epoch seconds
+  - name: get_rum_page_waterfall
+    description: Retrieve RUM page (view) waterfall data filtered by application name and session ID
+    params:
+      applicationName: Application name to filter events
+      sessionId: Session ID to filter events
+  - name: list_dashboards
+    description: Get list of dashboards from Datadog
+    params:
+      name: Filter dashboards by name
+      tags: Filter dashboards by tags
+  - name: list_downtimes
+    description: List scheduled downtimes from Datadog
+    params:
+      currentOnly: Return only currently active downtimes when true
+  - name: list_hosts
+    description: Get list of hosts from Datadog
+    params:
+      count: "Max number of hosts to return (max: 1000)"
+      filter: Filter string for search results
+      from: Search hosts from this UNIX timestamp
+      include_hosts_metadata: "Include host metadata (version, platform, etc)"
+      include_muted_hosts_data: Include muted hosts status and expiry
+      sort_dir: Sort direction (asc/desc)
+      sort_field: Field to sort hosts by
+      start: Starting offset for pagination
+  - name: list_incidents
+    description: Get incidents from Datadog
+    params:
+      pageOffset: Specific offset to use for pagination
+      pageSize: Size for a given page of results
+  - name: list_traces
+    description: Get APM traces from Datadog
+    params:
+      from: Start time in epoch seconds
+      limit: Maximum number of traces to return
+      operation: Filter by operation name
+      query: Datadog APM trace query string
+      service: Filter by service name
+      sort: Sort order for traces
+      to: End time in epoch seconds
+  - name: mute_host
+    description: Mute a host in Datadog
+    params:
+      end: POSIX timestamp for when the mute should end
+      hostname: The name of the host to mute
+      message: Message to associate with the muting of this host
+      override: "If true and the host is already muted, replaces existing end time"
+  - name: query_metrics
+    description: Query timeseries points of metrics from Datadog
+    params:
+      from: "Start of the queried time period, seconds since the Unix epoch."
+      query: "Datadog metrics query string. e.g. \"avg:system.cpu.user{*}\""
+      to: "End of the queried time period, seconds since the Unix epoch."
+  - name: schedule_downtime
+    description: Schedule a downtime in Datadog
+    params:
+      end: POSIX timestamp for the end of the downtime
+      message: A message to include with the downtime
+      monitorId: The ID of the monitor to mute
+      monitorTags: A list of monitor tags for filtering
+      recurrence: Recurrence settings for the downtime
+      scope: "Scope to apply downtime to (e.g. 'host:my-host')"
+      start: POSIX timestamp for the start of the downtime
+      timezone: "The timezone for the downtime (e.g. 'UTC', 'America/New_York')"
+  - name: unmute_host
+    description: Unmute a host in Datadog
+    params:
+      hostname: The name of the host to unmute
