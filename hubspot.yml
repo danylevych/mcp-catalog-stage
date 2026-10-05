@@ -14,9 +14,7 @@ description: |
   ## What you'll need to connect
 
   **Required:**
-  - **A HubSpot MCP Auth App**: register one under Development -> MCP Auth Apps in your HubSpot account, then give its client ID and client secret to your Obot administrator. The remote server accepts OAuth only -- a private app access token works with the local `@hubspot/mcp-server` package, not with this endpoint.
-
-  You are not asked to pick scopes when registering the app. HubSpot derives them from the tools this server exposes and from what you approve on the consent screen.
+  - **HubSpot private app access token**: You can find this in Settings -> Integrations -> Private Apps.
 
 metadata:
   categories: "Business, SaaS & API Integrations"
@@ -25,362 +23,316 @@ repoURL: https://www.npmjs.com/package/@hubspot/mcp-server
 runtime: remote
 remoteConfig:
   fixedURL: https://mcp.hubspot.com
-  # mcp.hubspot.com takes OAuth 2.1 + PKCE and nothing else, and its
-  # authorization-server metadata advertises no registration_endpoint, so
-  # dynamic registration 404s. The client has to be registered by hand in
-  # HubSpot (Development > MCP Auth Apps) and its id and secret given to Obot,
-  # which is what this flag makes Obot say instead of surfacing that 404.
   staticOAuthRequired: true
+# mcp.hubspot.com's tools. obot narrows a connection's tools/list to the names a
+# policy and an agent allow, matched exactly, so these must be the names the server
+# sends. manage_crm_objects is the write tool and is not served to every account.
 toolPreview:
-  - name: hubspot-batch-create-associations
-    description: |
-      🛡️ Guardrails:
-            1.  Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
-
-          🎯 Purpose:
-            1. Establishes relationships between HubSpot objects, linking records across different object types, by creating associations between objects in batch.
-            2. Uses a single set of association types for all associations in the batch.
-
-          📋 Prerequisites:
-            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
-            2. Use the hubspot-get-association-definitions tool to identify valid association types before creating associations.
+  - name: discover_hubspot_schema
+    description: Discover HubSpot CRM object types and schemas.
     params:
-      fromObjectType: "The type of HubSpot object to create association from. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      inputs: List of association inputs defining the relationships to create. (max 100 associations per batch)
-      toObjectType: "The type of HubSpot object to create association to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      types: The types of associations to create
-  - name: hubspot-batch-create-objects
+      query: Schema search query.
+  - name: get_aeo_metrics
     description: |
-      🛡️ Guardrails:
-            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
-
-          🎯 Purpose:
-            1. Creates multiple HubSpot objects of the same objectType in a single API call, optimizing for bulk operations.
-
-          📋 Prerequisites:
-            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
-            2. Use the hubspot-list-objects tool to sample existing objects for the object type.
-            3. Use the hubspot-get-association-definitions tool to identify valid association types before creating associations.
+      Portal-level AEO analytics: brand visibility, mentions, citations, competitor
+      share-of-voice, and per-assistant breakdowns for a date window. Select the
+      sections you need with `include`, a JSON array of section names, e.g.
+      ["SUMMARY", "PROMPTS"] (SUMMARY, PROMPTS, CITATIONS, CITATION_ANALYSIS,
+      COMPETITORS, ASSISTANT_BREAKDOWN, RUN_STATUS, ICPS_AND_PRODUCTS, BUSINESS_UNITS,
+      LIMITS); defaults to {SUMMARY, RUN_STATUS}. businessUnitId is optional: omit it to use
+      the portal's business unit automatically, or call once with
+      include=["BUSINESS_UNITS"] first to choose one when the portal has several.
+      CITATION_ANALYSIS additionally requires a citationUrl.
+      Dates are ISO-8601 (YYYY-MM-DD); default to the last 30 days. Call
+      tool_guidance (mcpToolInstructions) for the full section catalog, setup-status
+      semantics, and field-level details.
     params:
-      inputs: Array of objects to create (maximum 100 per batch)
-      objectType: "The type of HubSpot object to create. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-  - name: hubspot-batch-read-objects
-    description: |
-      🎯 Purpose:
-            1. Retrieves multiple HubSpot objects of the same object type by their IDs in a single batch operation.
-
-          🧭 Usage Guidance:
-            1. Use this tool to retrieve objects when the object IDs are known.
+      businessUnitId: Business unit ID (optional). Call get_aeo_metrics with include=["BUSINESS_UNITS"] first to discover all available business unit IDs for this portal — data is keyed by the IDs returned there.
+      startDate: ISO-8601 start date (YYYY-MM-DD). Optional; defaults to 30 days ago. Only set when the user asks for a different window.
+      endDate: ISO-8601 end date (YYYY-MM-DD). Optional; defaults to today. Must be on or after startDate.
+      include: 'Which sections to populate, as a JSON array of section names — always an array, even for a single section (e.g. ["SUMMARY", "PROMPTS"]), never a bare string. SUMMARY = portal aggregates. PROMPTS = per-prompt metrics list. CITATIONS = citation counts + top domains with ownership flags. COMPETITORS = per-brand mention counts and share-of-voice. ASSISTANT_BREAKDOWN = metrics split by AI assistant (ChatGPT, Gemini, etc.). RUN_STATUS = run freshness. ICPS_AND_PRODUCTS = the business unit''s ICPs and products (ids + names/descriptions) for use as icpIds / productIds when creating prompts. BUSINESS_UNITS = available business unit IDs and names, plus the resolved BU used for this request. LIMITS = prompt usage vs capacity (promptsUsed, promptsCapacity, onCredits, managePromptsUrl). CITATION_ANALYSIS = single-URL deep dive for citationUrl (required): per-assistant citation counts, brand mentions with relationship type, content type, and citing prompts. Defaults to {SUMMARY, RUN_STATUS}.'
+      filters: 'Optional filters for the SUMMARY and PROMPTS sections: buying-journey phase, tracking status, visibility-score range, product / ICP / topic / language. Topic/group filters match ANY selected group by default; set groupFilterMode to ALL to require every selected group. Does not affect CITATIONS, COMPETITORS, or ASSISTANT_BREAKDOWN, which are always portal-wide.'
+      models: AI models to include when PROMPTS is requested. Empty = all models. Valid values from the AEO config tool.
+      assistants: AI assistant families to include when PROMPTS is requested. Empty = all assistants. Valid values from the AEO config tool.
+      maxPrompts: Maximum number of prompts to return per page when PROMPTS is requested. Defaults to 100 and is capped at 250 to keep responses within the MCP response budget. When more prompts match than fit in one page, the PROMPTS section returns hasMore=true and a nextCursor to pass back as promptsCursor.
+      promptsCursor: Pagination cursor for the PROMPTS section. Omit (or pass 0) to start at the first page; to page through all prompts, pass the nextCursor value returned in the PROMPTS section of the previous response. Only affects the PROMPTS section.
+      citationUrl: Citation URL to analyze. REQUIRED when include contains CITATION_ANALYSIS. Pass a full page URL from a manage_aeo_prompts DETAIL response's citationUrls list (CITATIONS returns domains, not URLs, so it cannot supply this value). The URL is normalized (tracking query params stripped, trailing slash / www removed, host lowercased) before matching, so pass it exactly as it appears in that citationUrls list.
+  - name: get_campaign_attribution_reports
+    description: Retrieve campaign attribution reports and metrics.
     params:
-      inputs: Array of object IDs to read (maximum 100 per batch)
-      objectType: "The type of HubSpot object to read. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      properties: Optional list of property names to include in the results
-      propertiesWithHistory: Optional list of property names to include with history
-  - name: hubspot-batch-update-objects
-    description: |
-      🛡️ Guardrails:
-            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
-
-          🎯 Purpose:
-            1. Updates multiple existing HubSpot objects of the same objectType in a single API call.
-            2. Use this tool when the user wants to update one or more existing CRM objects.
-            3. If you are unsure about the property type to update, identify existing properties of the object and ask the user.
-
-          📋 Prerequisites:
-            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
-            2. Use the hubspot-list-objects tool to sample existing objects for the object type.
-            3. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
+      attributionModel: Attribution model.
+      campaignCrmObjectIds: Campaign CRM object IDs.
+      dimensions: Report dimensions.
+      endDate: Report end date.
+      filters: Report filters.
+      hasReadToolInstructions: Whether tool instructions were read.
+      limit: Maximum results.
+      metrics: Report metrics.
+      mode: Report mode.
+      responseFormat: Response format.
+      sortByMetric: Metric used to sort results.
+      sortOrder: Result sort order.
+      startDate: Report start date.
+      taskId: Task ID.
+  - name: get_content_analytics_report
+    description: Run content analytics reports for HubSpot pages and blog posts.
     params:
-      inputs: Array of objects to update (maximum 100 per batch)
-      objectType: "The type of HubSpot object to update. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-  - name: hubspot-create-engagement
-    description: |
-      🛡️ Guardrails:
-            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
-
-          🎯 Purpose:
-            1. Creates a HubSpot engagement (Note or Task) associated with contacts, companies, deals, or tickets.
-            2. This endpoint is useful for keeping your CRM records up-to-date on any interactions that take place outside of HubSpot.
-            3. Activity reporting in the CRM also feeds off of this data.
-
-          📋 Prerequisites:
-            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId.
-
-          🧭 Usage Guidance:
-            1. Use NOTE type for adding notes to records
-            2. Use TASK type for creating tasks with subject, status, and assignment
-            3. Both require relevant associations to connect them to CRM records
-            4. Other types of engagements (EMAIL, CALL, MEETING) are NOT supported yet.
-            5. HubSpot notes and task descriptions support HTML formatting. However headings (<h1>, <h2>, etc.) look ugly in the CRM. So use them sparingly.
+      contentIds: Content IDs.
+      end: Reporting window end.
+      excludedIds: Content IDs to exclude.
+      includeMetadata: Include content metadata.
+      limit: Maximum report rows.
+      mode: Report mode.
+      offset: Pagination offset.
+      paginationCursor: Pagination cursor.
+      peopleType: People type for people reports.
+      period: Time-series reporting period.
+      scaleByPercent: Scale totals by percentage.
+      search: Content search query.
+      sortDirection: Result sort direction.
+      sortMetric: Metric used to sort results.
+      start: Reporting window start.
+  - name: get_conversation_channel_metadata
+    description: List HubSpot conversation channels and channel instances.
     params:
-      associations: Associated records for this engagement
-      metadata: Metadata specific to the engagement type
-      ownerId: The ID of the owner of this engagement
-      timestamp: Timestamp for the engagement (milliseconds since epoch). Defaults to current time if not provided.
-      type: The type of engagement to create (NOTE or TASK)
-  - name: hubspot-create-property
-    description: |
-      🛡️ Guardrails:
-            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
-
-          🎯 Purpose:
-            1. Creates new custom properties for HubSpot object types, enabling data structure customization.
-
-          📋 Prerequisites:
-            1. Use the hubspot-get-user-details tool to get the OwnerId and UserId if you don't have that already.
-            2. Use the hubspot-list-objects tool to sample existing objects for the object type.
-            3. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
-
-          🧭 Usage Guidance:
-            1. Use this tool when you need to create a new custom property for a HubSpot object type.
-            2. Makes sure that the user is looking to create a new property, and not create an object of a specific object type.
-            3. Use list-properties to get a list of all properties for a given object type to be sure that the property does not already exist.
-            4. Use list-properties to to understand the data structure of object properties first.
+      activeOnly: Return only active channels.
+  - name: get_crm_objects
+    description: Retrieve HubSpot CRM records by ID.
     params:
-      calculationFormula: A formula that is used to compute a calculated property
-      description: A description of the property that will be shown as help text
-      displayOrder: The order for displaying the property (lower numbers displayed first)
-      externalOptions: Only for enumeration type properties. Should be set to true in conjunction with a referencedObjectType
-      fieldType: Controls how the property appears in HubSpot
-      formField: Whether the property can be used in forms
-      groupName: The name of the property group the property belongs to
-      hasUniqueValue: "Whether the property's value must be unique"
-      hidden: Whether the property should be hidden in HubSpot
-      label: A human-readable property label that will be shown in HubSpot
-      name: "The internal property name, which must be used when referencing the property via the API"
-      objectType: "The type of HubSpot object to create the property for. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      options: A list of valid options for enumeration properties
-      type: The data type of the property
-  - name: hubspot-generate-feedback-link
-    description: |
-      🎯 Purpose:
-            1. Use this tool when the user wants to submit feedback about HubSpot MCP tool.
-            2. Use this tool proactively when the other HubSpot MCP tools are unable to solve the user's tasks effectively.
-            3. Use this tool when you sense dissatisfaction from the user using HubSpot MCP tools.
-            4. Feedback will help us improve the HubSpot MCP tools in future iterations.
-    params: {}
-  - name: hubspot-get-association-definitions
-    description: |
-      🎯 Purpose:
-            1. Retrieves valid association types between specific HubSpot object types.
-
-          📦 Returns:
-            1. Array of valid association definitions with type IDs, labels, and categories.
-
-          🧭 Usage Guidance:
-            1. Always use before creating associations to ensure valid relationship types or to help troubleshoot association creation errors.
+      objectIds: CRM record IDs.
+      objectType: CRM object type.
+      properties: Properties to include.
+  - name: get_marketing_email_analytics
+    description: "Provides analytics data for marketing emails based on sends in the given date range. To find emails created or published within certain date ranges, use search_crm_objects instead.\n\nThe request takes a single field, analysisRequest, which is an OBJECT — never a bare string. It carries a \"_type\" discriminator plus the section settings for that type. \nAvailable analysisRequest types (set as analysisRequest._type):\n- \"OVERVIEW\" — portal-level aggregate statistics (sends, deliveries, opens, clicks, bounces, unsubscribes)   over a date range, optionally scoped to specific emails or broken down by time interval.   Uses statisticsSection.\n- \"HEALTH\" — portal email health diagnostics. Four sections:   mxGroupStatisticsSection (delivery performance statistics by the destination domains with the most deliveries, over a date range);   healthScoresSection (monthly 0–100 health scores with per-metric breakdown for   click, open, hard bounce, spam report, unsubscribe, and click-to-open — up to 6 months,   GLOBAL or INDUSTRY benchmark);   sourceHealthScoresSection (same per-metric breakdown per contact source, i.e.   where contacts were imported from, past ~30 days);   bounceReasonsSection (breakdown of bounces by reason category over a date range,   split into hard and soft bounces, optionally scoped to a single MX group).\n- \"RECIPIENTS\" — delivery outcome and engagement summary for a specific contact recipient,   with an optional ordered event timeline (sent, opened, clicked, bounced, etc.).   Uses recipientDetailsSection.   No operation returns a collection of all recipients for an email;   only individual recipient information is available.\n- \"UNSUBSCRIBE_SURVEY\" — breakdown of unsubscribe survey responses by reason code   (NO_LONGER_INTERESTED, DID_NOT_SIGN_UP, TOO_MANY_EMAILS, IRRELEVANT_CONTENT, OTHER)   over a date range. Optionally scoped to a specific email by emailContentId.   Use this to understand WHY contacts unsubscribed and improve future emails.\n"
     params:
-      fromObjectType: "The type of HubSpot object to get association from. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      toObjectType: "The type of HubSpot object to get association to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-  - name: hubspot-get-engagement
-    description: |
-      🎯 Purpose:
-            1. Retrieves a HubSpot engagement by ID.
+      analysisRequest: The analysis request object. Set '_type' to 'OVERVIEW', 'HEALTH', or 'RECIPIENTS' and include the corresponding section settings.
+      mode: Deprecated alias for analysisRequest; use analysisRequest instead.
+  - name: get_organization_details
+    description: Retrieve organization teams, roles, seats, and account information.
     params:
-      engagementId: The ID of the engagement to retrieve
-  - name: hubspot-get-link
-    description: |
-      🎯 Purpose:
-            1. Generates HubSpot UI links for different pages based on object types and IDs.
-            2. Supports both index pages (lists of objects) and record pages (specific object details).
-
-          📋 Prerequisites:
-            1. Use the hubspot-get-user-details tool to get the PortalId and UiDomain.
-
-          🧭 Usage Guidance:
-            1. Use to generate links to HubSpot UI pages when users need to reference specific HubSpot records.
-            2. Validates that object type IDs exist in the HubSpot system.
+      include: Data sections to include.
+  - name: get_properties
+    description: Retrieve CRM property definitions.
     params:
-      pageRequests: Array of page link requests to generate
-      portalId: The HubSpot portal/account ID
-      uiDomain: "The HubSpot UI domain(e.g., 'app.hubspot.com')"
-  - name: hubspot-get-property
-    description: |
-      🎯 Purpose:
-            1. This tool retrieves detailed information about a specific property for a HubSpot object type.
-            2. You can use this to get all metadata related to a property, including its type, options,
-               and other configuration details.
+      objectType: CRM object type.
+      propertyNames: Property names.
+  - name: get_user_details
+    description: Retrieve authenticated user details and CRM access.
     params:
-      objectType: "The type of HubSpot object the property belongs to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      propertyName: The name of the property to retrieve
-  - name: hubspot-get-schemas
+      include: Data sections to include.
+  - name: manage_aeo_prompts
     description: |
-      🎯 Purpose:
-            1. Retrieves all custom object schemas defined in the HubSpot account.
-
-          🧭 Usage Guidance:
-            1. Before working with custom objects to understand available object types,
-               their properties, and associations.
-
-          📦 Returns:
-            1. Provides the objectTypeId and objectType for each schema.
-            2. These attributes should be used for this object type instead of "custom" in subsequent requests.
-    params: {}
-  - name: hubspot-get-user-details
-    description: |
-      🎯 Purpose
-            1. Authenticates and analyzes the current HubSpot access token, providing context about the user's permissions and account details.
-
-          🧭 Usage Guidance:
-            1. This tool must be used before performing any operations with Hubspot tools to determine the identity of the user, and permissions they have on their Hubspot account.
-
-          📦 Returns:
-            1. User ID, Hub ID, App ID, token type, a comprehensive list of authorized API scopes, and detailed owner information, and account information.
-            2. The uiDomain and hubId can be used to construct URLs to the HubSpot UI for the user.
-            3. If the user is an owner, the ownerId will help identify objects that are owned by the user.
-    params: {}
-  - name: hubspot-get-workflow
-    description: |
-      🎯 Purpose:
-            1. This tool retrieves detailed information about a specific workflow from the HubSpot account.
-
-          🧭 Usage Guidance:
-            1. Use the "flowId" parameter to specify which workflow to retrieve.
-            2. This endpoint returns complete workflow information including actions, enrollment criteria, and scheduling.
-            3. Use the hubspot-list-workflows tool first to identify the workflow ID you need.
+      Read AI responses to tracked prompts, or create and run new tracked prompts.
+      Provide exactly one `operation`, a JSON object (not a string) with an
+      `_operationType` field set to DETAIL (a single prompt's per-run AI response
+      text, citations, and mentions for an assistant and date window) or CREATE
+      (start tracking new prompts and run them immediately). CREATE requires a
+      confirmed=false preview before confirmed=true. Call get_aeo_metrics with
+      include=["BUSINESS_UNITS"] then include=["ICPS_AND_PRODUCTS"] to get the
+      businessUnitId, icpIds, and productIds that CREATE needs. Call tool_guidance
+      (mcpToolInstructions) for the confirmation workflow and per-operation details.
     params:
-      flowId: The ID of the workflow to retrieve
-  - name: hubspot-list-associations
+      operation: 'The prompt operation to perform, as a JSON object (not a string). The object must include an "_operationType" field set to exactly one of "DETAIL" or "CREATE", alongside that operation''s own fields. Use DETAIL to drill into a single tracked prompt''s run history, or CREATE to create and run new tracked prompts. Provide exactly one operation. Example: {"_operationType": "CREATE", "businessUnitId": 123, "promptTexts": ["What is the best CRM for small businesses?"], "icpIds": [1], "productIds": [2]}.'
+  - name: manage_aeo_recommendations
     description: |
-      🎯 Purpose:
-            1. Retrieves existing relationships between a specific object and other objects of a particular type.
-            2. For example, you can find all companies that a contact is associated with, all deals related to a company, or discover which customers have an open ticket.
-
-          📦 Returns:
-            1. Collection of associated object IDs and relationship metadata.
-            2. Use hubspot-batch-read-objects to get more information about the associated objects.
-
-          🧭 Usage Guidance:
-            1. Use this tool when mapping relationships between different HubSpot objects to understand your data's connections.
-            2. This tool is ideal when you already know a specific record's ID and need to discover its relationships with other object types.
-            3. Prefer this over hubspot-search-objects tool when exploring established connections rather than filtering by properties or criteria.
+      List and inspect AI-search brand recommendations for a business unit. Provide
+      exactly one `operation`, a JSON object (not a string) with an `_operationType`
+      field set to LIST (recommendations for a business unit, filterable
+      by status/prompt), DETAIL (one recommendation enriched with action-status
+      fields), or START_ACTION. Call get_aeo_metrics with include=["BUSINESS_UNITS"]
+      first to get the businessUnitId. Starting a recommendation's action isn't
+      available through the assistant yet — START_ACTION returns a message directing
+      the user to complete it in HubSpot AEO. Call tool_guidance (mcpToolInstructions)
+      for per-operation details.
     params:
-      after: Paging cursor token for retrieving the next page of results
-      objectId: The ID of the HubSpot object to get associations from
-      objectType: "The type of HubSpot object to get associations from. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      toObjectType: "The type of HubSpot object to get associations to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-  - name: hubspot-list-objects
+      operation: 'The recommendation operation to perform, as a JSON object (not a string). The object must include an "_operationType" field set to exactly one of "LIST", "DETAIL", or "START_ACTION", alongside that operation''s own fields. Use LIST to list recommendations for a business unit, DETAIL to fetch one recommendation enriched with action-status fields, or START_ACTION, which returns a message directing the user to complete the action in HubSpot AEO (starting recommendation actions is not yet available through the assistant). Provide exactly one operation. Example: {"_operationType": "LIST", "businessUnitId": 123}.'
+  - name: manage_campaign_objects
     description: |
-      🎯 Purpose:
-            1. Retrieves a paginated list of objects of a specified type from HubSpot.
+      Creates or updates HubSpot marketing campaigns and manages asset associations.
 
-          📦 Returns:
-            1. Collection of objects with their properties and metadata, plus pagination information.
+      <prerequisites>
+      Use CRM tools to retrieve the campaign's campaignCrmObjectId before using CAMPAIGN_UPDATE or CAMPAIGN_ASSET operations.
+      </prerequisites>
 
-          🧭 Usage Guidance:
-            1. Use for initial data exploration to understand the data structure of a HubSpot object type.
-            2. Helps list objects when the search criteria or filter criteria is not clear.
-            3. Use hubspot-search-objects for targeted queries when the data structure is known.
-            4. Use hubspot-batch-read-objects to retrieve specific objects by their IDs.
-            5. Use hubspot-list-associations to list associations between objects.
+      <mandatory_confirmation_process>
+      Always show proposed changes in a table and get explicit user approval before creating or updating campaigns or modifying asset associations. This step is CRITICAL.
+
+        <confirmation_rules>
+        - **First confirmation only**: Add this line after the approval prompt: "Want to skip confirmations for this chat? Just ask."
+        - **After 1 confirmation**: Stop offering the skip option, but keep confirming
+        - **If user opts out**: Skip confirmations for remainder of session
+        </confirmation_rules>
+
+        <confirmation_format>
+        Proposed Changes:
+
+        | operationType   | Field       | Value             |
+        |-----------------|-------------|-------------------|
+        | CAMPAIGN_CREATE | displayName | Q3 Brand Campaign |
+
+        Approve? [✅ Yes / ❌ No]
+        Want to skip confirmations for this chat? Just ask.
+        </confirmation_format>
+      </mandatory_confirmation_process>
+
+      <operations>
+      The `operationType` field is required on every request:
+      - CAMPAIGN_CREATE: set `createRequest` with required `displayName`, optional `startDate`, `endDate`, `goal`, `audience`, `notes`, `customProperties`.
+      - CAMPAIGN_UPDATE: set `updateRequest` with required `campaignCrmObjectId`, optional `displayName`, `startDate`, `endDate`, `goal`, `audience`, `notes`, `customProperties`.
+      - CAMPAIGN_ASSET: set `assetRequest` with required `campaignCrmObjectId`, `assetOperations` (non-empty list of `{action, assetObjectType, crmObjectIds}`). Each entry has its own ADD|REMOVE action. Check `assetOperationFailures` in the response — if non-empty, those operations failed; succeeded ones are already applied. Call CAMPAIGN_ASSET_TYPES_LIST first.
+      - CAMPAIGN_ASSET_TYPES_LIST: no additional fields required.
+      </operations>
     params:
-      after: The paging cursor token of the last successfully read resource.
-      archived: Whether to return only results that have been archived.
-      associations: "A list of object types to retrieve associated IDs for (e.g., appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users)."
-      limit: "The maximum number of results to display per page (max: 500)."
-      objectType: "The type of HubSpot object to list. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      properties: A list of the properties to be returned in the response.
-  - name: hubspot-list-properties
-    description: |
-      🎯 Purpose:
-            1. This tool retrieves a complete catalog of properties for any HubSpot object type.
-
-          🧭 Usage Guidance:
-            1. This API has a large response that can consume a lot of tokens. Use the hubspot-list-objects tool to sample existing objects for the object type first.
-            2. Try to use the hubspot-get-property tool to get a specific property.
-            3. Use at the beginning of workflows to understand available data structures.
+      operationType: 'Required. The operation to perform: CAMPAIGN_CREATE, CAMPAIGN_UPDATE, CAMPAIGN_ASSET, or CAMPAIGN_ASSET_TYPES_LIST (deprecated — use GET_CAMPAIGN_ASSET_TYPES via readCampaignData instead).'
+      createRequest: Campaign creation data. Required when operationType is CAMPAIGN_CREATE.
+      updateRequest: Campaign update data. Required when operationType is CAMPAIGN_UPDATE.
+      assetRequest: Asset association data. Required when operationType is CAMPAIGN_ASSET.
+  - name: manage_crm_objects
+    description: Create or update supported HubSpot CRM records and activities.
     params:
-      archived: Whether to return only properties that have been archived.
-      includeHidden: Whether to include hidden properties in the response.
-      objectType: "The type of HubSpot object to get properties for. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-  - name: hubspot-list-workflows
-    description: |
-      🎯 Purpose:
-            1. This tool retrieves a paginated list of workflows from the HubSpot account.
-
-          🧭 Usage Guidance:
-            1. Use the "limit" parameter to control the number of results returned per page.
-            2. For pagination, use the "after" parameter with the value from the previous response's paging.next.after.
-            3. This endpoint returns essential workflow information including ID, name, type, and status.
+      confirmationStatus: Confirmation status.
+      createRequest: CRM create request.
+      updateRequest: CRM update request.
+  - name: manage_landing_page
+    description: 'Create, edit, style, publish, clone, and inspect HubSpot landing pages. One action per call. Reads: MODULES, MODULE_TYPES, MODULE_DEF, MODULE_STYLES, MODULE_GUIDE, REVISIONS, TEMPLATES, FORMS, BRAND_KIT, LIST_CUSTOM_MODULES. Writes: CREATE_FROM_TEMPLATE, CREATE_CUSTOM_TEMPLATE, UPDATE_CUSTOM_TEMPLATE, CREATE_MODULE, UPDATE_MODULE, SET_MODULE_FIELDS, SET_MODULE_STYLES, SET_SECTION_STYLES, INSERT, REMOVE, REMOVE_SECTION, MOVE, SET_METADATA, PUBLISH, CLONE, RESTORE_REVISION. Read before write: MODULES before any edit; MODULE_TYPES before INSERT; MODULE_DEF before unfamiliar fields; MODULE_STYLES before SET_MODULE_STYLES. Writes mutate one shared draft — never concurrently. CREATE_MODULE authors a reusable custom module TYPE (not on any page — check LIST_CUSTOM_MODULES first, then INSERT the returned modulePath). BATCH IS THE DEFAULT for compound edits: group SET_MODULE_FIELDS/STYLES/SECTION_STYLES/METADATA/REMOVE/MOVE into one action=BATCH call (operationsJson, sequential server-side, returns batchResults). Max 10 operations per batch; at most one REMOVE/REMOVE_SECTION/MOVE per batch. NOT batchable (always separate): INSERT/CREATE_*/UPDATE_*/CLONE/PUBLISH/RESTORE_REVISION. If BATCH returns "not currently supported", fall back to sequential calls. CREATE_FROM_TEMPLATE requires explicit user confirmation IN CHAT — choosing a template is NOT confirmation. Confirm before PUBLISH or RESTORE_REVISION. Never renders a card — after your LAST edit or PUBLISH, call the render tool. Examples: action=MODULES contentId=123 -> modulesJson. action=CREATE_FROM_TEMPLATE pageName="Spring Promo" templatePath="..." -> {status,contentId,editorUrl}. action=SET_MODULE_FIELDS contentId=456 moduleId="hero_1" fieldOverridesJson={headline:"Hi"} -> verifiedFieldsJson. action=SET_SECTION_STYLES contentId=456 moduleId="hero_1" stylesJson={backgroundColor:{r:255,g:238,b:0,a:1}} -> verifiedStylesJson. Scopes: reads need landingpages-read or -write; writes need landingpages-write; PUBLISH additionally needs landingpages-publish.'
     params:
-      after: Cursor token to fetch the next page of results. Use the paging.next.after value from the previous response.
-      limit: The maximum number of workflows to return per page (1-100).
-  - name: hubspot-search-objects
-    description: |
-      🎯 Purpose:
-            1. Performs advanced filtered searches across HubSpot object types using complex criteria.
-
-          📋 Prerequisites:
-            1. Use the hubspot-list-objects tool to sample existing objects for the object type.
-            2. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
-
-          📦 Returns:
-            1. Filtered collection matching specific criteria with pagination information.
-
-          🧭 Usage Guidance:
-            1. Preferred for targeted data retrieval when exact filtering criteria are known. Supports complex boolean logic through filter groups.
-            2. Use hubspot-list-objects when filter criteria is not specified or clear or when a search fails.
-            3. Use hubspot-batch-read-objects to retrieve specific objects by their IDs.
-            4. Use hubspot-list-associations to get the associations between objects.
-
-          🔍 Filtering Capabilities:
-            1. Think of "filterGroups" as separate search conditions that you want to combine with OR logic (meaning ANY of them can match).
-            2. If you want to find things that match ALL of several conditions (AND logic), put those conditions together in the same filters list.
-            3. If you want to find things that match AT LEAST ONE of several conditions (OR logic), put each condition in a separate filterGroup.
-            4. You can include a maximum of five filterGroups with up to 6 filters in each group, with a maximum of 18 filters in total.
+      action: 'Action to perform. One per call. READ actions (no side effects): "MODULES": list every module on the page draft. Each entry includes the module''s field values, its layout position (sectionId, rowIndex, parentCellName when it lives inside a nested column, and cellWidth/cellX on the 12-column grid), and ownership flags (overrideable, globalOwned, globalPartialPath, themePartialOwned). Positions are populated even on a freshly created template page, before any edit. Capture a module''s position here BEFORE you REMOVE or MOVE it so you can restore or reposition it precisely. Check ownership before REMOVE/MOVE: true global partials (header/footer) and global widgets are refused, but modules inside theme dnd_partial sections are removable and movable. "MODULE_TYPES": list available module types for this page''s theme (call before INSERT). "MODULE_DEF": full field schema for a module type (requires modulePath). The response also includes the curated guide in moduleGuide when one exists, so a separate MODULE_GUIDE call is usually unnecessary. "MODULE_STYLES": read the layout styles (padding, margin, background, visibility) for a module (requires moduleId). "MODULE_GUIDE": (rarely needed — MODULE_DEF already returns the same guide inline) curated markdown for the modulePath covering required fields, common traps, and a minimal INSERT body. Errors if no guide exists; check MODULE_TYPES.hasGuide first. "REVISIONS": list recent page revisions for undo. "TEMPLATES": list landing page templates available in the portal (contentId not required). "FORMS": list forms available in the portal for embedding on THIS LANDING PAGE via the @hubspot/form module (contentId not required). This is the landing-page tool''s own forms lookup and it is complete: an empty list means the portal has no forms. Never call manage_website_page (or a CRM tool) for form data while working on a landing page. Returns guid, name, portalId, formType, isPublished, createdAt, updatedAt. "BRAND_KIT": fetch the portal''s primary brand kit (colors, fonts, logos) for THIS LANDING PAGE — complete on its own, and never to be re-fetched via manage_website_page — when brand-consistent content would help — e.g. picking a CTA color, a hero font, or a logo to drop into a header (contentId not required). "LIST_CUSTOM_MODULES": list the custom module types already in this portal''s Design Manager, most recently updated first (contentId not required). Call this BEFORE CREATE_MODULE to check whether a suitable module already exists — reusing one is cheaper than creating a duplicate, and its modulePath goes straight into INSERT. Returns customModules (modulePath plus a compact field schema). Optional: limit (default 20, max 50). WRITE actions (mutate the same shared draft — issue them ONE AT A TIME, never in parallel): "CLONE": duplicate an existing page (requires contentId of the source page; optional pageName, slug and businessUnitId for the clone). Returns a new contentId. "CREATE_FROM_TEMPLATE": create the page from a template (requires pageName and templatePath; optional slug and businessUnitId). MUST be preceded by a proposal card (call render_landing_page_ui directly with a "propose" target — there is no separate write step to propose) and an explicit user confirmation IN CHAT — never the first step of creating a page, and choosing a template is NOT confirmation. Returns contentId. "SET_MODULE_FIELDS": verbatim field patch on one module (requires contentId, moduleId, fieldOverridesJson). "SET_MODULE_STYLES": set layout styles (padding, margin, background, visibility) on one module (requires contentId, moduleId, stylesJson). Merge semantics — only supplied fields are updated. Call action=MODULE_STYLES first to see current values. "SET_SECTION_STYLES": set the background, padding, margin, or full-width of the ENTIRE SECTION band a module sits in (requires contentId, moduleId, stylesJson; moduleId is any module inside the band, used as an anchor). This is the correct way to do "make this section''s background <color>" — do NOT inject CSS via SET_METADATA headHtml for section backgrounds. Merge semantics. Page-scoped bands — including theme dnd_partial sections — CAN be styled; only true global sections (header/footer/global widgets) are refused. "INSERT": add a new module (requires contentId, modulePath; then EITHER anchorModuleId+anchorPosition for anchor-based placement, OR sectionId+rowStart+columnStart+columnsSpanned for grid-coord placement; optional fieldOverridesJson). "REMOVE": delete one module (requires contentId, moduleId). If it was the last module in its section band, the now-empty band — background and padding included — is collapsed too, so no empty "Drop modules here" ghost band is left behind. "REMOVE_SECTION": delete the ENTIRE section band a module sits in — the whole top-level row, every module in it, AND the band''s own background/padding styles (requires contentId, moduleId; moduleId is any module inside the target band, used as an anchor). Page-scoped sections — including theme dnd_partial sections like a logo bar — CAN be removed; only true global sections are refused. "MOVE": reposition module into its own new row (requires contentId, moduleId; then EITHER anchorModuleId+anchorPosition for anchor-based placement, OR sectionId+rowStart for grid placement). For MOVE, anchorPosition supports the new-row directions BEFORE / AFTER / START_OF_SECTION / END_OF_SECTION; in-row and stacked directions (IN_ROW_*, STACK_*) are INSERT-only — to place a module in-row or stacked, REMOVE it and INSERT with that anchorPosition. "SET_METADATA": update page metadata — pageName, htmlTitle, slug, metaDescription, featuredImageUrl, language, headHtml (requires contentId; all metadata fields optional). "PUBLISH": publish draft (requires contentId; confirm with the user first). "RESTORE_REVISION": roll back to revision (requires contentId, revisionId; confirm first). "CREATE_CUSTOM_TEMPLATE": create a fully custom landing page from HubL source you write. Use when no existing template fits the user''s design — you author the complete HTML/HubL and pass it as hublSource. Requires slug and hublSource. Returns templatePath (always .html). No module editing is needed — the HubL IS the final design. hublSource must be under 1.5 MB. "UPDATE_CUSTOM_TEMPLATE": replace the HubL source of a page previously created with CREATE_CUSTOM_TEMPLATE. Requires templatePath (from the create response) and hublSource; pass templateId too when you have it — it resolves the template even after a publish moves it. The live page reflects the change immediately — no separate publish step. Same hublSource size limit as CREATE_CUSTOM_TEMPLATE. "CREATE_MODULE": author a NEW custom module TYPE in Design Manager — a reusable module the theme does not have yet (requires moduleName, moduleHtml, moduleFieldsJson; contentId not required). Returns modulePath. This creates the TYPE only and puts nothing on any page: pass modulePath verbatim to action=INSERT to place an instance. Reach for it only when no built-in or existing custom module fits (check MODULE_TYPES and LIST_CUSTOM_MODULES first). Not tied to a page, so several CREATE_MODULE calls CAN run in parallel. "UPDATE_MODULE": replace the HubL and/or field schema of a module type previously created with CREATE_MODULE (requires modulePath from the create response, plus moduleHtml and/or moduleFieldsJson). moduleFieldsJson REPLACES the whole schema rather than patching it. Every page using the module re-renders with the new source immediately. Only module types created through CREATE_MODULE can be updated. "BATCH": run several operations in ONE call, executed sequentially server-side, stopping at the first failure (requires operationsJson). Batchable sub-actions: all READ actions, plus the write actions SET_MODULE_FIELDS, SET_MODULE_STYLES, SET_SECTION_STYLES, SET_METADATA, REMOVE, REMOVE_SECTION, MOVE — i.e. edits on modules/sections you ALREADY have IDs for. NOT batchable (their output feeds later work, or they change whole-page lifecycle): INSERT, CLONE, CREATE_FROM_TEMPLATE, CREATE_CUSTOM_TEMPLATE, UPDATE_CUSTOM_TEMPLATE, CREATE_MODULE, UPDATE_MODULE, PUBLISH, RESTORE_REVISION, BATCH. Returns batchResults with a per-operation outcome; committed operations are NOT rolled back when a later operation fails. Read MODULES first to capture the IDs each operation needs.'
+      contentId: Content ID of the landing page. Required for most actions. NOT required for CREATE_FROM_TEMPLATE (creates a new page), TEMPLATES, FORMS, BRAND_KIT, MODULE_DEF, and MODULE_GUIDE.
+      moduleId: Module ID to operate on. Required for SET_MODULE_FIELDS, SET_MODULE_STYLES, SET_SECTION_STYLES, REMOVE, REMOVE_SECTION, MOVE, and MODULE_STYLES. For REMOVE_SECTION and SET_SECTION_STYLES it is any module inside the target section band (an anchor). Find IDs via action=MODULES.
+      modulePath: Module type path (e.g. "@hubspot/rich_text"). Required for INSERT, MODULE_DEF, MODULE_GUIDE, and UPDATE_MODULE. Use paths exactly as returned by action=MODULE_TYPES, LIST_CUSTOM_MODULES, or CREATE_MODULE (a custom module's stored path can differ from the moduleName you sent, so never reconstruct it).
+      query: 'Substring filter. When action=MODULE_TYPES: filters by module type name. When action=TEMPLATES: filters by template name.'
+      availableForNewContent: 'When action=TEMPLATES: filter to templates available for new page creation. Omit to return all templates.'
+      folderName: 'When action=TEMPLATES: filter by folder name (e.g. "my-theme/templates").'
+      themePath: 'When action=TEMPLATES: filter templates by theme path. Use for HubSpot themes ("@hubspot/elevate", "@hubspot/growth"), marketplace themes ("@marketplace/vendor/theme-name"), or custom themes ("my-custom-theme"). Omit to return templates across all themes.'
+      responseFormat: 'Verbosity of the response. "DETAILED" returns all fields and is the default when omitted. "SUMMARY" trims verbose fields to save tokens on large pages: when action=MODULES, drops module field values and returns only module IDs, modulePaths, and section info. For MODULE_TYPES, MODULE_DEF, and REVISIONS, SUMMARY currently returns the same payload as DETAILED.'
+      limit: Maximum number of entries to return for paginated read actions (MODULES, MODULE_TYPES, REVISIONS). Defaults to 50. Ignored for MODULE_DEF. For LIST_CUSTOM_MODULES it defaults to 20 and is capped at 50.
+      offset: Zero-based starting index for paginated read actions (MODULES, MODULE_TYPES, REVISIONS). Defaults to 0. Use the response's nextOffset to fetch the next page when hasMore is true. Ignored for MODULE_DEF.
+      pageName: Name for the landing page. Required for CREATE_FROM_TEMPLATE. Optional for CLONE (defaults to a copy of the source page name). Also used by SET_METADATA to update the internal listing name shown in the HubSpot content listing UI (not the HTML title).
+      templatePath: Template path to build the page on. Required for CREATE_FROM_TEMPLATE. Use action=TEMPLATES to discover available templates, then pass the templatePath exactly as returned.
+      templateId: 'Numeric template id, as returned by action=TEMPLATES ("id") and by CREATE_CUSTOM_TEMPLATE / UPDATE_CUSTOM_TEMPLATE ("templateId"). Optional for UPDATE_CUSTOM_TEMPLATE, where it is preferred over templatePath: publishing can move a custom template to a different path, and the id keeps working when it does. Ignored by every other action.'
+      fieldOverridesJson: JSON object of verbatim field values (e.g. {"heading":"Close deals faster"}). Required for SET_MODULE_FIELDS. Optional for INSERT (sets initial field values on the new module).
+      stylesJson: 'JSON object of structured layout styles to merge. Required for SET_MODULE_STYLES (onto a module) and SET_SECTION_STYLES (onto a section band). Uses merge semantics: only supplied fields are updated, existing styles are preserved. Shape: {"breakpoint_styles":{"default":{"padding":{"top":{"value":20,"units":"px"}},"margin":{"top":{"value":10,"units":"px"}}}}}. Supported breakpoints: "default" (desktop), "mobile". Supported spacing sides — padding: top, right, bottom, left; margin: top, bottom. Each side is a Size: {"value":<number>,"units":"px"|"em"|"rem"|..."}. Background color (mainly for SET_SECTION_STYLES) goes in the top-level backgroundColor field as r/g/b/a: {"backgroundColor":{"r":255,"g":238,"b":0,"a":1}} (r/g/b 0–255, a 0–1). Section-only fields (SET_SECTION_STYLES): "forceFullWidthSection":true OR "maxWidthSectionCentering":<px> (mutually exclusive). Use camelCase keys (e.g. backgroundColor, breakpointStyles, forceFullWidthSection) — they mirror what action=MODULE_STYLES returns. Also supports per-breakpoint "hidden":true/false to toggle visibility. Layout only — for TEXT color use the separate textColor field, not this.'
+      textColor: 'For action=SET_MODULE_STYLES: set the text color of ALL text in a module (headings, paragraphs, list items) to this CSS color, e.g. "#cc0000", "red", or "rgb(204,0,0)". This is the reliable way to recolor module text — it writes a scoped, !important rule the renderer applies to the module''s own elements, overriding the theme. Do NOT hand-roll headHtml CSS for text color, and do NOT use it to recolor a whole section (use the section''s sectionStyleVariant for that). Supply with moduleId; may be combined with stylesJson.'
+      sectionId: Layout section ID to place the module in. Required for INSERT (grid-coord placement). Optional for MOVE (omit to keep current section). Find section IDs via action=MODULES.
+      rowStart: 1-based row position within the section. Required for INSERT (grid-coord placement). Optional for MOVE. Modules with the same rowStart and sectionId are placed side-by-side.
+      columnStart: 1-based column position on a 12-column grid. Required for INSERT (grid-coord placement). Optional for MOVE. columnStart=1 is leftmost.
+      columnsSpanned: Width in columns on the 12-column grid. Required for INSERT when using legacy grid-coord placement. Full width=12, two halves=6 each, three thirds=4 each. Omit when using anchor-based placement (anchorModuleId + anchorPosition) — width is computed automatically by stealing from siblings.
+      anchorModuleId: 'Anchor-based placement: moduleId of an existing module that an INSERT (or a moved module on MOVE) should land relative to. When provided, omit rowStart / columnStart / columnsSpanned — the backend resolves the target row from the anchor and (for INSERT) auto-redistributes column widths across siblings. Pair with anchorPosition.'
+      anchorPosition: 'Anchor placement direction. Used with anchorModuleId on INSERT. Values: "BEFORE" (new module on a new row immediately above the anchor''s row), "AFTER" (new row immediately below), "IN_ROW_WITH" (sibling cell appended to the right of all existing cells in the anchor''s row — siblings give up width), "IN_ROW_BEFORE" (sibling cell positioned to the LEFT of the anchor within the same row), "IN_ROW_AFTER" (sibling cell positioned to the RIGHT of the anchor within the same row, regardless of any cells beyond the anchor), "START_OF_SECTION" (first row of anchor''s section), "END_OF_SECTION" (last row of anchor''s section), "STACK_ABOVE" (wrap the anchor in a column and place the new module ABOVE it as a stacked row), "STACK_BELOW" (same, stacked BELOW). STACK_* builds a "unified section" — both modules share ONE wrapper cell as separate rows (the shape the editor''s drag-to-stack creates); use it instead of BEFORE/AFTER when the two modules should read as one visual group rather than independent section rows. STACK requires a module anchor inside a section (not a top-level section id).'
+      htmlTitle: HTML <title> tag for the page (~50–60 chars). Only used for SET_METADATA. Omit to leave unchanged.
+      slug: URL slug (lowercase, hyphenated, no leading slash). Used for SET_METADATA (omit to leave unchanged), CREATE_FROM_TEMPLATE (omit to derive from pageName), CLONE (omit to auto-generate), or CREATE_CUSTOM_TEMPLATE (required — used as the template name).
+      metaDescription: Meta description for search snippets (~140–160 chars). Only used for SET_METADATA. Omit to leave unchanged.
+      featuredImageUrl: Featured image URL for social sharing. Only used for SET_METADATA. Omit to leave unchanged.
+      language: ISO-639-1 language code (e.g. "en", "de"). Used for SET_METADATA (omit to leave unchanged).
+      headHtml: Raw HTML injected into <head> (e.g. "<style>body{background:#2563eb}</style>"). Only used for SET_METADATA. Omit to leave unchanged.
+      revisionId: Revision ID to restore. Required for RESTORE_REVISION. Find IDs via action=REVISIONS.
+      hublSource: 'Complete HubL template source. Required for CREATE_CUSTOM_TEMPLATE and UPDATE_CUSTOM_TEMPLATE. Must be a valid HubL document — real HubL expressions, not escaped HTML. {{ standard_header_includes }} and {{ standard_footer_includes }} are injected automatically before </head> and before </body> if absent. Accepted size: up to 1,500,000 bytes of UTF-8 (1.5 MB).'
+      operationsJson: 'Required for action=BATCH. JSON array of operations to run sequentially, in order. Each element is an object shaped like a single manage_landing_page request: {"action":"...", ...the fields that action needs}. Example: [{"action":"SET_MODULE_FIELDS","contentId":123,"moduleId":"m1","fieldOverridesJson":"{\"heading\":\"Hi\"}"},{"action":"REMOVE","contentId":123,"moduleId":"m2"}]. Only batchable sub-actions are allowed (all READ actions, plus SET_MODULE_FIELDS, SET_MODULE_STYLES, SET_SECTION_STYLES, SET_METADATA, REMOVE, REMOVE_SECTION, MOVE); INSERT, the CREATE/CLONE/UPDATE lifecycle actions, PUBLISH, RESTORE_REVISION, and nested BATCH are rejected before anything runs. The batch STOPS at the first failing operation: operations before it stay committed (there is no rollback), and operations after it are reported as "skipped". The array size must not exceed the server''s configured maximum. Each operation''s own required fields (contentId, moduleId, etc.) must be present on that element.'
+      businessUnitId: ID of the business unit (brand) to put the page in. Used for CREATE_FROM_TEMPLATE and CLONE. Omit or pass 0 for the account's default business unit (CLONE then keeps the source page's business unit).
+      moduleName: Display name for a custom module type, as it appears in the editor's module list (e.g. "Pricing Card"). Required for CREATE_MODULE, optional for UPDATE_MODULE. Also seeds the module's Design Manager path, so keep it short and specific.
+      moduleHtml: HubL template source for a custom module — the markup one instance of it renders (e.g. "<section>{{ module.heading }}</section>"). Reference each field from moduleFieldsJson as {{ module.<fieldName> }}. Required for CREATE_MODULE; on UPDATE_MODULE supply it only to replace the source. Pass real HubL, not escaped HTML.
+      moduleFieldsJson: 'Field schema for a custom module: a JSON ARRAY of field definitions, each with name, type, label and default — e.g. [{"name":"heading","type":"text","label":"Heading","default":"Hello"}]. This is the module''s SCHEMA (what an editor can fill in), not content values. Required for CREATE_MODULE. On UPDATE_MODULE it REPLACES the entire schema — send every field you want to keep.'
+  - name: manage_marketing_email
+    description: Create, update, clone, preview, and manage draft marketing emails.
     params:
-      after: The paging cursor token of the last successfully read resource.
-      filterGroups: Groups of filters to apply (combined with OR).
-      limit: "The maximum number of results to display per page (max: 100)."
-      objectType: "The type of HubSpot object to search. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      properties: A list of the properties to be returned in the response.
-      query: "Text to search across default searchable properties of the specified object type. Each object type has different searchable properties. For example: contacts (firstname, lastname, email, phone, company), companies (name, website, domain, phone), deals (dealname, pipeline, dealstage, description, dealtype), etc"
-      sorts: A list of sort criteria to apply to the results.
-  - name: hubspot-update-engagement
-    description: |
-      🛡️ Guardrails:
-            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
-
-          🎯 Purpose:
-            1. Updates an existing HubSpot engagement (Note or Task).
-            2. Allows modification of engagement attributes, content, and metadata.
-
-          📋 Prerequisites:
-            1. You need the engagement ID to update an existing engagement.
-            2. Use the hubspot-get-engagement tool to get the current engagement details if needed.
-            3. Use the hubspot-get-user-details tool to get the owner ID.
-
-          🧭 Usage Guidance:
-            1. Use for updating NOTE content or TASK details (subject, description, status).
-            2. Only include the fields you want to update - other fields will remain unchanged.
-            3. HubSpot notes and task descriptions support HTML formatting. However headings (<h1>, <h2>, etc.) look ugly in the CRM. So use them sparingly.
+      confirmationStatus: Confirmation status.
+      operation: Marketing email operation.
+  - name: manage_onboarding
+    description: '<purpose>Assess a portal''s CRM onboarding status and guide the user through the next onboarding step.</purpose><usage_guidance>Call this tool when get_user_details returns onboarded: false — this indicates the portal may be new and not yet set up. After answering the user''s immediate question, invoke this tool proactively and offer to help them get started. Do not call this tool if get_user_details returned onboarded: true. Use action to control behavior: leave empty (the default) to just check status. SET_GOAL — records the user''s primary goal; requires goal to be set to one of organizeAndTrackContacts, automateMarketing, generateLeads, manageSalesPipeline, customerSupport, billsAndCollectPayment, buildWebsite, createMarketingContent, or stillExploring — map the user''s own words to the closest matching value. Only one goal can be stored; setting a new goal replaces any previous one.</usage_guidance><returns>goalStatus: NOT_STARTED or COMPLETE — whether the user has set an onboarding goal; goal: the user''s stored goal (present once set); taskGroup: the onboarding task group for that goal (present once the goal is set, unless every task is already done) — a nested structure of a group with a name, a list of childGroups (each with its own name and further childGroups), and tasks, where each task has a name, description, and link the user can open; tasks the user has already completed or skipped are excluded, and taskGroup is omitted entirely when nothing is left to do; guidance: actionable guidance for you, the agent — when present, follow it and present the returned tasks as a set of options for the user to choose from; do not collapse them into a single step</returns><response_rendering>Render every returned task, including those nested in child groups, as a markdown link [task name](task link) with its description. List all of them (guidance says how many); do not omit or limit. Always render: See all onboarding tasks in your [start guide](guideLink).</response_rendering>'
     params:
-      associations: Associated records for this engagement
-      engagementId: The ID of the engagement to update
-      metadata: Metadata specific to the engagement type (Note or Task)
-      ownerId: The ID of the owner of this engagement
-      timestamp: Timestamp for the engagement (milliseconds since epoch).
-  - name: hubspot-update-property
-    description: |
-      🛡️ Guardrails:
-            1. Data Modification Warning: This tool modifies HubSpot data. Only use when the user has explicitly requested to update their CRM.
+      action: Defaults to empty, which just checks onboarding status. Set to SET_GOAL to record the user's primary goal — requires goal to also be set.
+      goal: 'The user''s primary goal, required when action=SET_GOAL. Map the user''s free-text goal description to the single closest matching canonical value: organizeAndTrackContacts, automateMarketing, generateLeads, manageSalesPipeline, customerSupport, billsAndCollectPayment, buildWebsite, createMarketingContent, or stillExploring.'
+  - name: manage_segment
+    description: |-
+      Create a segment, edit an existing one, or add/remove CRM records from one. Set operation.type to CreateStaticSegmentOperation to create a new hand-picked static segment, CreateDynamicSegmentOperation to create a new dynamic (filter-driven) segment whose membership updates automatically, UpdateSegmentOperation to edit an existing segment's name, description, or filter, AddMembersOperation to add records to an existing static segment, or RemoveMembersOperation to remove records from an existing static segment.
 
-          🎯 Purpose:
-            1. Updates existing custom properties for HubSpot object types, enabling data structure customization.
-
-          🧭 Usage Guidance:
-            1. Use hubspot-list-objects tool to sample existing objects for the object type.
-            2. If hubspot-list-objects tool's response isn't helpful, use hubspot-list-properties tool.
+      <mandatory_confirmation>
+      This tool writes to the portal. Before calling it, you MUST show the user a summary of the exact action and get explicit approval:
+      - CreateStaticSegmentOperation: the new segment name, the object type, and how many records   (if any) will pre-populate it.
+      - CreateDynamicSegmentOperation: the new segment name, the object type, and the filter that   defines membership.
+      - UpdateSegmentOperation: the target segment (list ID) and which fields change (new name,   description, and/or filter).
+      - AddMembersOperation / RemoveMembersOperation: the target segment (list ID), the object type,   and the number of records being added or removed.
+      End with an explicit approval prompt (e.g. "Proceed? [Yes / No]"). Leave confirmationStatus as UNCONFIRMED until the user approves; only after they confirm, call the tool with confirmationStatus set to CONFIRMED. Do NOT set CONFIRMED before the user approves, even if the user asks you to "just do it" or to skip confirmation. On the first confirmation in a chat you may also offer to stop asking for the rest of the session; if the user agrees, set confirmationStatus to CONFIRMATION_WAIVED_FOR_SESSION on subsequent calls.
+      </mandatory_confirmation>
     params:
-      calculationFormula: A formula that is used to compute a calculated property
-      description: A description of the property that will be shown as help text
-      displayOrder: The order for displaying the property (lower numbers displayed first)
-      fieldType: Controls how the property appears in HubSpot
-      formField: Whether the property can be used in forms
-      groupName: The name of the property group the property belongs to
-      hidden: Whether the property should be hidden in HubSpot
-      label: A human-readable property label that will be shown in HubSpot
-      objectType: "The type of HubSpot object the property belongs to. Valid values include: appointments, companies, contacts, courses, deals, leads, line_items, listings, marketing_events, meetings, orders, postal_mail, products, quotes, services, subscriptions, tickets, users. For custom objects, use the hubspot-get-schemas tool to get the objectType."
-      options: A list of valid options for enumeration properties
-      propertyName: The name of the property to update
-      type: The data type of the property
+      operation: The segment operation to perform. Set type to CreateStaticSegmentOperation, CreateDynamicSegmentOperation, UpdateSegmentOperation, AddMembersOperation, or RemoveMembersOperation.
+      confirmationStatus: User confirmation for this write. Defaults to UNCONFIRMED; the write is rejected unless set to CONFIRMED (or CONFIRMATION_WAIVED_FOR_SESSION) after the user approves.
+  - name: query_crm_data
+    description: Query HubSpot CRM data with SQL.
+    params:
+      chatInsights: Chat insights for the query.
+      sql: SQL query.
+      verbosityLevel: Response verbosity level.
+  - name: read_campaign_data
+    description: Retrieve campaign analytics, assets, and contacts.
+    params:
+      analyticsRequest: Campaign analytics request.
+      assetMetricsRequest: Campaign asset metrics request.
+      contactsRequest: Campaign contacts request.
+      operation: Campaign data operation.
+  - name: search_conversations
+    description: Search HubSpot conversations and messages.
+    params:
+      after: Pagination cursor.
+      aggregationDimensions: Conversation aggregation dimensions.
+      assignedAgentId: Assigned agent ID filter.
+      channelInstanceId: Channel instance ID filter.
+      conversationChannelId: Conversation channel ID filter.
+      conversationStatus: Conversation status filter.
+      endTime: Time-range end.
+      inboxId: Inbox ID filter.
+      includeAllDialogue: Include system and bot dialogue.
+      includeMessages: Include messages.
+      maxBucketsPerDimension: Maximum aggregation buckets.
+      maxConversations: Maximum conversations.
+      messageDetail: Message detail level.
+      messageLimit: Maximum messages per conversation.
+      objectId: Associated CRM object ID.
+      objectType: Associated CRM object type.
+      query: Conversation search query.
+      searchMethod: Search method.
+      startTime: Time-range start.
+  - name: search_crm_objects
+    description: Search and filter HubSpot CRM records.
+    params:
+      chatInsights: Chat insights for the search.
+      filterGroups: Search filter groups.
+      limit: Maximum results.
+      objectType: CRM object type.
+      offset: Pagination offset.
+      properties: Properties to include.
+      query: CRM record search query.
+      sorts: Result sort rules.
+  - name: search_intent_signals
+    description: |-
+      Buyer-intent signals for companies and contacts. SEARCH returns signal records, LIST returns the portal's signal types, AGGREGATE returns counts grouped by company/companies. Can narrow aggregates by a signal type. Set `query` to one shape and always set `_queryType`. Put known names in one SEARCH for aliases and suggestions; LIST does not need to be called but can be used for broad catalog discovery.
+
+      An unknown field is dropped, not rejected, so check the response matches the filters you asked for.
+    params:
+      query: Queries available to use. SEARCH for finding different signals. LIST for portal's standard and custom signals. AGGREGATE for more involved grouping/counting/ranking company asks.
+  - name: search_owners
+    description: Find CRM record owners by name, email, or ID.
+    params:
+      limit: Maximum results.
+      offset: Pagination offset.
+      ownerIds: Owner IDs.
+      searchQuery: Owner name or email query.
+  - name: search_properties
+    description: Find CRM property definitions by keyword.
+    params:
+      keywords: Property search keywords.
+      objectType: CRM object type.
+      query: Legacy property search query.
+  - name: submit_feedback
+    description: Submit feedback about the HubSpot MCP server.
+    params:
+      explanationOfSatisfaction: Explanation of satisfaction.
+      feedback: Feedback content.
+      feedbackType: Feedback type.
+      goal: Feedback goal.
+      sourceInterface: Source interface.
+      triggeringToolName: Triggering tool name.
+  - name: tool_guidance
+    description: Retrieve usage guidance for HubSpot tools.
+    params:
+      toolNames: Tool names to retrieve guidance for.

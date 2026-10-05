@@ -1,0 +1,110 @@
+name: Google Analytics
+entryKey: google-analytics
+serverUserType: singleUser
+shortDescription: "Read Google Analytics 4 accounts, properties, and run standard and realtime reports"
+description: |
+  ![Google Analytics MCP Server](https://img.shields.io/badge/Google%20Analytics-MCP%20Server-blue?style=for-the-badge&logo=google-analytics)
+  ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
+  ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
+  ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+
+  A Model Context Protocol (MCP) server for Google Analytics 4, providing read-only access to account and property configuration and to the reporting APIs.
+
+  ## Features
+  - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
+  - **Account Discovery**: List every account and GA4 property the user can access
+  - **Property Details**: Time zone, currency, industry category, and linked Google Ads accounts
+  - **Annotations**: Read the notes recorded against a property for deployments, campaigns, and anomalies
+  - **Custom Definitions**: List a property's custom dimensions and custom metrics
+  - **Reporting**: Run reports with date ranges, dimensions, metrics, filters, ordering, and pagination
+  - **Realtime**: Run realtime reports over the last 30 minutes of activity
+
+  ## What you'll need to connect
+
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
+
+metadata:
+  categories: "Business"
+  allow-multiple: "true"
+  # Deployed by obot's hosted MCP feature (pkg/hostedmcp). Obot ignores keys it
+  # does not know, so these ride along with the manifest through the catalog
+  # sync and the service is described in exactly one place.
+  #
+  # hostedmcp-port is the host port the OAuth proxy is published on. It is not
+  # the same fact as fixedURL below, which is how obot and the browser reach
+  # the proxy and may well be a reverse-proxied hostname with no port in it.
+  hostedmcp: "true"
+  hostedmcp-port: "8086"
+  hostedmcp-scopes: "openid,profile,email,https://www.googleapis.com/auth/analytics.readonly"
+  hostedmcp-google-apis: "analyticsadmin.googleapis.com,analyticsdata.googleapis.com"
+  # Defaults to Google when absent. Set it for a server that authenticates
+  # somewhere else, e.g. https://login.microsoftonline.com/common/v2.0
+  # hostedmcp-authorize-url: "https://accounts.google.com"
+  # The repository this service's image lives in. The registry and tag come
+  # from the deployment (OBOT_HOSTED_MCP_APP_IMAGE), so the same file serves
+  # every environment.
+  # The variable that carries this service's public address. It changes from
+  # one deployment to the next, so only its name can live here.
+  hostedmcp-url-env: "MCP_URL_GOOGLE_ANALYTICS"
+  hostedmcp-image-name: "analytics"
+icon: https://img.icons8.com/color/96/google-analytics.png
+runtime: remote
+remoteConfig:
+  # Replaced at runtime with MCP_URL_GOOGLE_ANALYTICS. This value only has to satisfy the
+  # catalog sync, which requires a fixedURL and resolves its hostname — hence a
+  # real domain rather than something obviously fake. Nothing serves MCP there,
+  # so a connection that reaches it means the variable is missing.
+  fixedURL: https://example.com/mcp
+toolPreview:
+  - name: ga_get_account_summaries
+    description: |
+      Retrieve all Google Analytics accounts and properties the user can access.
+      Use this to discover property IDs before calling reporting or admin tools.
+    params: {}
+  - name: ga_get_custom_dimensions_and_metrics
+    description: Return the custom dimensions and custom metrics defined for a GA4 property.
+    params:
+      property_id: GA property ID (numeric or "properties/NNN").
+  - name: ga_get_property_details
+    description: |
+      Return configuration details about a GA4 property, including display name,
+      time zone, currency code, industry category, and service level.
+    params:
+      property_id: GA property ID (numeric or "properties/NNN").
+  - name: ga_list_google_ads_links
+    description: Return all Google Ads accounts linked to a GA4 property.
+    params:
+      property_id: GA property ID (numeric or "properties/NNN").
+  - name: ga_list_property_annotations
+    description: |
+      Return the annotations (notes) added to a GA4 property for specific dates or periods.
+      Useful for correlating data changes with deployments, campaign launches, or anomalies.
+    params:
+      property_id: GA property ID (numeric or "properties/NNN").
+  - name: ga_run_realtime_report
+    description: |
+      Run a realtime report for a GA4 property.
+      Returns data for the last 30 minutes of activity.
+    params:
+      dimension_filter: Optional FilterExpression object for dimensions.
+      dimensions: 'List of dimension objects, e.g. [{"name": "city"}, {"name": "deviceCategory"}].'
+      limit: Maximum rows to return. Default is 10000.
+      metric_filter: Optional FilterExpression object for metrics.
+      metrics: 'List of metric objects, e.g. [{"name": "activeUsers"}].'
+      order_bys: Optional list of OrderBy objects.
+      property_id: GA property ID (numeric or "properties/NNN").
+      return_property_quota: Whether to include quota information in the response.
+  - name: ga_run_report
+    description: Run a report for a GA4 property over one or more date ranges.
+    params:
+      currency_code: 'Optional ISO 4217 currency code, e.g. "USD".'
+      date_ranges: 'List of date range objects, e.g. [{"startDate": "30daysAgo", "endDate": "today"}].'
+      dimension_filter: Optional FilterExpression object for dimensions.
+      dimensions: 'List of dimension objects, e.g. [{"name": "sessionSource"}, {"name": "sessionMedium"}].'
+      limit: Maximum rows to return. Default is 10000.
+      metric_filter: Optional FilterExpression object for metrics.
+      metrics: 'List of metric objects, e.g. [{"name": "sessions"}, {"name": "activeUsers"}].'
+      offset: Row offset for pagination. Default is 0.
+      order_bys: Optional list of OrderBy objects.
+      property_id: GA property ID (numeric or "properties/NNN").
+      return_property_quota: Whether to include quota information in the response.

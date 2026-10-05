@@ -1,0 +1,177 @@
+name: Google Search Console
+entryKey: google-search-console
+serverUserType: singleUser
+shortDescription: "Query Search Console performance, inspect URL indexing, and manage properties and sitemaps"
+description: |
+  ![Google Search Console MCP Server](https://img.shields.io/badge/Google%20Search%20Console-MCP%20Server-blue?style=for-the-badge&logo=google-search-console)
+  ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge)
+  ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
+  ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+
+  A Model Context Protocol (MCP) server for Google Search Console, providing search performance analytics, URL indexing inspection, and property and sitemap management.
+
+  ## Features
+  - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
+  - **Search Analytics**: Clicks, impressions, CTR, and position by query, page, device, country, or date
+  - **Period Comparison**: Compare two date ranges with absolute and percentage changes
+  - **URL Inspection**: Check how Google indexes a URL, or up to 10 at once, and group them by issue type
+  - **Properties**: List, add, and remove Search Console properties
+  - **Sitemaps**: List, inspect, submit, and remove sitemaps
+
+  ## What you'll need to connect
+
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
+
+metadata:
+  categories: "Business"
+  allow-multiple: "true"
+  # Deployed by obot's hosted MCP feature (pkg/hostedmcp). Obot ignores keys it
+  # does not know, so these ride along with the manifest through the catalog
+  # sync and the service is described in exactly one place.
+  #
+  # hostedmcp-port is the host port the OAuth proxy is published on. It is not
+  # the same fact as fixedURL below, which is how obot and the browser reach
+  # the proxy and may well be a reverse-proxied hostname with no port in it.
+  hostedmcp: "true"
+  hostedmcp-port: "8087"
+  hostedmcp-scopes: "openid,profile,email,https://www.googleapis.com/auth/webmasters"
+  hostedmcp-google-apis: "searchconsole.googleapis.com"
+  # Defaults to Google when absent. Set it for a server that authenticates
+  # somewhere else, e.g. https://login.microsoftonline.com/common/v2.0
+  # hostedmcp-authorize-url: "https://accounts.google.com"
+  # The repository this service's image lives in. The registry and tag come
+  # from the deployment (OBOT_HOSTED_MCP_APP_IMAGE), so the same file serves
+  # every environment.
+  # The variable that carries this service's public address. It changes from
+  # one deployment to the next, so only its name can live here.
+  hostedmcp-url-env: "MCP_URL_GOOGLE_SEARCH_CONSOLE"
+  hostedmcp-image-name: "search-console"
+icon: https://img.icons8.com/color/96/google-web-search.png
+runtime: remote
+remoteConfig:
+  # Replaced at runtime with MCP_URL_GOOGLE_SEARCH_CONSOLE. This value only has to satisfy the
+  # catalog sync, which requires a fixedURL and resolves its hostname — hence a
+  # real domain rather than something obviously fake. Nothing serves MCP there,
+  # so a connection that reaches it means the variable is missing.
+  fixedURL: https://example.com/mcp
+toolPreview:
+  - name: gsc_add_site
+    description: |
+      Add a site to the user's Search Console account.
+      Ownership must be verified afterwards before full data becomes available.
+    params:
+      site_url: 'The full site URL to add, e.g. "https://example.com/" or "sc-domain:example.com".'
+  - name: gsc_batch_inspect_urls
+    description: |
+      Inspect up to 10 URLs and return their indexing status with a summary.
+      Calls are made sequentially to avoid rate limits.
+    params:
+      site_url: The Search Console property URL that owns the pages.
+      urls: List of 1-10 URLs to inspect.
+  - name: gsc_check_indexing_issues
+    description: |
+      Inspect up to 10 URLs and group them by indexing issue: indexed, not_indexed,
+      robots_blocked, canonical_mismatch, fetch_errors, or unknown.
+    params:
+      site_url: The Search Console property URL that owns the pages.
+      urls: List of 1-10 URLs to check.
+  - name: gsc_compare_periods
+    description: |
+      Compare search performance between two date ranges.
+      Returns absolute and percentage changes in clicks, impressions, CTR, and position,
+      sorted by absolute click change.
+    params:
+      dimensions: 'Dimensions to group by. Default is ["query"].'
+      period1_start: First period start date (YYYY-MM-DD).
+      period1_end: First period end date (YYYY-MM-DD).
+      period2_start: Second period start date (YYYY-MM-DD).
+      period2_end: Second period end date (YYYY-MM-DD).
+      row_limit: Top N rows to compare per period. Default is 50.
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+  - name: gsc_delete_site
+    description: |
+      Remove a site from the user's Search Console account.
+      This is irreversible: ownership verification has to be repeated if the site is added again.
+    params:
+      site_url: 'The full site URL to delete, e.g. "https://example.com/" or "sc-domain:example.com".'
+  - name: gsc_delete_sitemap
+    description: |
+      Remove a sitemap from Search Console.
+      The sitemap file itself stays on the server and can be submitted again.
+    params:
+      sitemap_url: 'The full sitemap URL, e.g. "https://example.com/sitemap.xml".'
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+  - name: gsc_get_advanced_search_analytics
+    description: |
+      Query search analytics with explicit date ranges, filtering, sorting, and pagination.
+      Returns rows with clicks, impressions, CTR, and position.
+    params:
+      dimension_filter_groups: 'Raw filterGroups array per the Search Console API, e.g. [{"filters": [{"dimension": "query", "operator": "contains", "expression": "python"}]}].'
+      dimensions: 'Dimensions to group by: query, page, device, country, date. Default is ["query"].'
+      end_date: End date (YYYY-MM-DD).
+      row_limit: Maximum rows to return (1-25000). Default is 1000.
+      search_type: "Traffic type: web, image, video, news, discover, googleNews. Default is web."
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+      sort_by: "Field to sort by: clicks, impressions, ctr, position."
+      sort_direction: "Sort direction: ascending or descending. Default is descending."
+      start_date: Start date (YYYY-MM-DD).
+      start_row: Pagination offset, 0-based. Default is 0.
+  - name: gsc_get_page_queries
+    description: |
+      Return the top search queries driving impressions and clicks to a single page,
+      with a totals row appended.
+    params:
+      days: Lookback window in days. Default is 28.
+      page_url: 'The page URL to analyze, e.g. "https://example.com/blog/my-post/".'
+      row_limit: Maximum queries to return (1-500). Default is 50.
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+  - name: gsc_get_performance_overview
+    description: Return aggregate totals and a day-by-day trend for a Search Console property.
+    params:
+      days: Lookback window in days. Default is 28.
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+  - name: gsc_get_search_analytics
+    description: |
+      Query search performance (clicks, impressions, CTR, position) for a site over the last N days,
+      grouped by the requested dimensions. Data ends yesterday.
+    params:
+      days: Lookback window in days (1-500). Default is 28.
+      dimensions: 'Dimensions to group by: query, page, device, country, date. Default is ["query"].'
+      row_limit: Maximum rows to return (1-500). Default is 100.
+      search_type: "Traffic type: web, image, video, news, discover, googleNews. Default is web."
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+  - name: gsc_get_site_details
+    description: Return the permission level and verification state of a Search Console property.
+    params:
+      site_url: 'The site URL as registered in Search Console, e.g. "https://example.com/" or "sc-domain:example.com".'
+  - name: gsc_get_sitemap_details
+    description: |
+      Return full details for a sitemap, including last submitted and downloaded times,
+      warnings, errors, and the contents breakdown (type, submitted, indexed).
+    params:
+      sitemap_url: 'The full sitemap URL, e.g. "https://example.com/sitemap.xml".'
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+  - name: gsc_inspect_url
+    description: |
+      Inspect a URL's indexing status with the URL Inspection API: indexing status, canonical URL,
+      crawl state, robots.txt blocking, and rich results.
+    params:
+      page_url: 'The URL to inspect, e.g. "https://example.com/blog/post/".'
+      site_url: The Search Console property URL that owns the page. It must be verified.
+  - name: gsc_list_properties
+    description: |
+      List all verified Search Console properties the user can access.
+      Typically the first call, to discover site URLs for the other tools.
+    params: {}
+  - name: gsc_list_sitemaps
+    description: List the sitemaps submitted for a Search Console property.
+    params:
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
+      sitemap_index: Optional sitemap index URL. Only sitemaps under this index are returned.
+  - name: gsc_submit_sitemap
+    description: |
+      Submit a sitemap to Search Console for a verified property.
+      The sitemap URL must be publicly accessible; it is processed asynchronously.
+    params:
+      sitemap_url: 'The full sitemap URL to submit, e.g. "https://example.com/sitemap.xml".'
+      site_url: 'Search Console property URL, e.g. "https://example.com/".'
