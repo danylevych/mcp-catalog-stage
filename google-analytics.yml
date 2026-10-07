@@ -1,6 +1,5 @@
 name: Google Analytics
 entryKey: google-analytics
-serverUserType: singleUser
 shortDescription: "Read Google Analytics 4 accounts, properties, and run standard and realtime reports"
 description: |
   ![Google Analytics MCP Server](https://img.shields.io/badge/Google%20Analytics-MCP%20Server-blue?style=for-the-badge&logo=google-analytics)
@@ -22,7 +21,6 @@ description: |
   ## What you'll need to connect
 
   **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
-
 metadata:
   categories: "Business"
   allow-multiple: "true"

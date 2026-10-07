@@ -1,6 +1,5 @@
 name: Google Search Console
 entryKey: google-search-console
-serverUserType: singleUser
 shortDescription: "Query Search Console performance, inspect URL indexing, and manage properties and sitemaps"
 description: |
   ![Google Search Console MCP Server](https://img.shields.io/badge/Google%20Search%20Console-MCP%20Server-blue?style=for-the-badge&logo=google-search-console)
@@ -21,7 +20,6 @@ description: |
   ## What you'll need to connect
 
   **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
-
 metadata:
   categories: "Business"
   allow-multiple: "true"

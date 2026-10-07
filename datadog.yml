@@ -1,6 +1,5 @@
 name: Datadog
 entryKey: datadog
-serverUserType: singleUser
 shortDescription: "Monitor incidents, logs, dashboards, metrics, APM traces, and infrastructure with Datadog"
 description: |
   A Model Context Protocol (MCP) server that provides access to Datadog's monitoring and observability platform. This server enables AI agents to interact with key Datadog features including incidents, monitors, logs, dashboards, metrics, APM traces, infrastructure monitoring, and RUM analytics through a comprehensive set of tools.
@@ -17,7 +16,6 @@ description: |
 
   **Optional:**
   - **Datadog Site**: The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`.
-
 metadata:
   categories: "Monitoring & Observability, SaaS & API Integrations"
 icon: https://avatars.githubusercontent.com/u/365230?s=200&v=4
@@ -29,21 +27,6 @@ containerizedConfig:
   path: /
   args:
     - mcp-server-datadog
-env:
-  - name: Datadog API Key
-    key: DATADOG_API_KEY
-    description: Your Datadog API key. API keys are unique to your organization.
-    sensitive: true
-    required: true
-  - name: Datadog App Key
-    key: DATADOG_APP_KEY
-    description: Your Datadog application key. Application keys are associated with the user account that created them and by default have the permissions of the user who created them.
-    sensitive: true
-    required: true
-  - name: Datadog Site
-    key: DATADOG_SITE
-    description: "(Optional) The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`."
-    required: false
 toolPreview:
   - name: cancel_downtime
     description: Cancel a scheduled downtime in Datadog
@@ -173,3 +156,21 @@ toolPreview:
     description: Unmute a host in Datadog
     params:
       hostname: The name of the host to unmute
+config:
+  - name: Datadog API Key
+    key: DATADOG_API_KEY
+    description: Your Datadog API key. API keys are unique to your organization.
+    sensitive: true
+    required: true
+    usage: env
+  - name: Datadog App Key
+    key: DATADOG_APP_KEY
+    description: Your Datadog application key. Application keys are associated with the user account that created them and by default have the permissions of the user who created them.
+    sensitive: true
+    required: true
+    usage: env
+  - name: Datadog Site
+    key: DATADOG_SITE
+    description: "(Optional) The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`."
+    required: false
+    usage: env

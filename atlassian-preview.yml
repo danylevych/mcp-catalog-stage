@@ -1,6 +1,5 @@
 name: Atlassian Preview
 entryKey: atlassian-preview
-serverUserType: singleUser
 shortDescription: "Preview access to Atlassian MCP: manage Jira issues, Confluence pages, comments, worklogs, and search with Rovo"
 description: |
   The preview endpoint for the official Atlassian Model Context Protocol (MCP) server. It connects AI assistants directly to your Atlassian Cloud organization, providing comprehensive real-time access to Jira, Confluence, and Rovo intelligence.
@@ -42,7 +41,6 @@ description: |
   - **Inline Feedback** - "Add an inline comment on the 'Architecture Overview' section of page 12345 suggesting a diagram"
   - **Advanced Search** - "Search Confluence via CQL for meeting notes modified in the last 2 weeks"
   - **Rovo Search** - "Find all Jira issues and Confluence pages discussing OAuth migration"
-
 metadata:
   categories: "Developer Tools"
   allow-multiple: "true"

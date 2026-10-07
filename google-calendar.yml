@@ -1,15 +1,14 @@
 name: Google Calendar
 entryKey: google-calendar
-serverUserType: singleUser
 shortDescription: "Manage Google Calendar events, recurring events, and attendees with OAuth2"
 description: |
   ![Google Calendar MCP Server](https://img.shields.io/badge/Google%20Calendar-MCP%20Server-blue?style=for-the-badge&logo=google-calendar)
   ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
   ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
   ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-  
+
   A Model Context Protocol (MCP) server for Google Calendar integration, providing comprehensive calendar and event management capabilities through a modern API interface.
-  
+
   ## Features
   - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
   - **Calendar Management**: List, create, update, and delete calendars with timezone and location support
@@ -21,11 +20,10 @@ description: |
   - **Quick Add**: Create events from natural language text descriptions
   - **Event Movement**: Move events between different calendars
   - **Recurring Event Instances**: List and manage individual instances of recurring events
-  
-  ## What you'll need to connect
-  
-  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
 
+  ## What you'll need to connect
+
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
 metadata:
   categories: "Business"
   allow-multiple: "true"

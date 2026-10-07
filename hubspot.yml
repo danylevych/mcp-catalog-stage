@@ -1,6 +1,5 @@
 name: HubSpot
 entryKey: hubspot
-serverUserType: singleUser
 shortDescription: "Manage HubSpot CRM objects, schemas, properties, and workflows"
 description: |
   A Model Context Protocol (MCP) server that integrates with HubSpot CRM.
@@ -15,7 +14,6 @@ description: |
 
   **Required:**
   - **HubSpot private app access token**: You can find this in Settings -> Integrations -> Private Apps.
-
 metadata:
   categories: "Business, SaaS & API Integrations"
 icon: https://img.icons8.com/?size=100&id=Xq3RA1kWzz3X&format=png&color=000000

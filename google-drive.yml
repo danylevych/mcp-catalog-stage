@@ -1,15 +1,14 @@
 name: Google Drive
 entryKey: google-drive
-serverUserType: singleUser
 shortDescription: "Manage Google Drive files, folders, permissions, and sharing with OAuth2"
 description: |
   ![Google Drive MCP Server](https://img.shields.io/badge/Google%20Drive-MCP%20Server-blue?style=for-the-badge&logo=google-drive)
   ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
   ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
   ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-  
+
   A Model Context Protocol (MCP) server for Google Drive integration, providing comprehensive file and folder management capabilities through a modern API interface.
-  
+
   ## Features
   - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
   - **File Operations**: List, get, read, copy, update, and delete files with advanced filtering and search
@@ -19,11 +18,10 @@ description: |
   - **Advanced Search**: Filter files by MIME type, name, modification time, and folder location
   - **Shared Drive Support**: Full management of shared drives including creation, deletion, and renaming
   - **Granular Permissions**: Create, update, and delete permissions for users, groups, domains, and public access
-  
-  ## What you'll need to connect
-  
-  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
 
+  ## What you'll need to connect
+
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
 metadata:
   categories: "Business"
   allow-multiple: "true"
