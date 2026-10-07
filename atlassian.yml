@@ -1,6 +1,5 @@
 name: Atlassian
 entryKey: atlassian
-serverUserType: singleUser
 shortDescription: "Manage Jira issues, Confluence pages, and Compass services with AI assistance"
 description: |
   A Model Context Protocol (MCP) server that bridges between your Atlassian Cloud site and compatible external tools. Once configured, it enables those tools to interact with Jira, Compass, and Confluence data in real-time.
@@ -33,7 +32,6 @@ description: |
   - **Issue Filtering** - "Show me all urgent bugs assigned to me from last week"
   - **Cross-Product Linking** - "Link Jira ticket ABC-456 to DEF-789 as Blocks"
   - **Compass Integration** - "What services depend on the api-gateway component?"
-
 metadata:
   categories: "Developer Tools"
   allow-multiple: "true"

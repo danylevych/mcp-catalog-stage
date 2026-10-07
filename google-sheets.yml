@@ -1,15 +1,14 @@
 name: Google Sheets
 entryKey: google-sheets
-serverUserType: singleUser
 shortDescription: "Create and manage Google Sheets spreadsheets, worksheets, cells, and formulas"
 description: |
   ![Google Sheets MCP Server](https://img.shields.io/badge/Google%20Sheets-MCP%20Server-blue?style=for-the-badge&logo=google-sheets)
   ![Python](https://img.shields.io/badge/Python-3.13+-green?style=for-the-badge&logo=python)
   ![FastMCP](https://img.shields.io/badge/FastMCP-2.11.1+-orange?style=for-the-badge)
   ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-  
+
   A Model Context Protocol (MCP) server for Google Sheets integration, providing comprehensive spreadsheet management capabilities through a modern API interface.
-  
+
   ## Features
   - **OAuth2 Authentication**: Secure Google OAuth integration with automatic token refresh
   - **Spreadsheet Management**: Create, read, and delete spreadsheets with full lifecycle control
@@ -18,11 +17,10 @@ description: |
   - **Formula Support**: Apply formula templates with dynamic placeholders across ranges
   - **Data Management**: Append rows and clear ranges with automatic sheet expansion
   - **Table Reading**: Read spreadsheet data as structured tables or raw cell values
-  
-  ## What you'll need to connect
-  
-  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
 
+  ## What you'll need to connect
+
+  **No Setup Required**: Authentication is handled automatically through OAuth2 workflow
 metadata:
   categories: "Business"
   allow-multiple: "true"
