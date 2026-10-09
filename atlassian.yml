@@ -41,7 +41,7 @@ icon: https://avatars.githubusercontent.com/u/168166?s=200&v=4
 repoURL: https://support.atlassian.com/atlassian-rovo-mcp-server/docs/getting-started-with-the-atlassian-remote-mcp-server/
 runtime: remote
 remoteConfig:
-  fixedURL: https://mcp.atlassian.com/v2/mcp
+  fixedURL: https://mcp.atlassian.com/v2/mcp?tools=all
 toolPreview:
 - name: addBitbucketRepoPullRequestComment
   description: Add a comment to a Bitbucket pull request
