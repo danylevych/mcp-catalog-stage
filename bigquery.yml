@@ -32,38 +32,72 @@ remoteConfig:
   staticOAuthRequired: true
 toolPreview:
   - name: list_dataset_ids
-    description: List BigQuery dataset IDs in a Google Cloud project, with optional pagination.
+    description: List BigQuery dataset IDs and BigLake namespaces in a Google Cloud project, with optional pagination.
     params:
       pageSize: Maximum number of datasets to return
       pageToken: Token for retrieving the next page
       projectId: Google Cloud project ID
   - name: get_dataset_info
-    description: Get metadata for a BigQuery dataset.
+    description: Get metadata for a BigQuery dataset or BigLake namespace.
     params:
       datasetId: BigQuery dataset ID
       projectId: Google Cloud project ID
   - name: list_table_ids
-    description: List table IDs in a BigQuery dataset, with optional pagination.
+    description: List table IDs in a BigQuery dataset or BigLake namespace, with optional pagination.
     params:
       datasetId: BigQuery dataset ID
       pageSize: Maximum number of tables to return
       pageToken: Token for retrieving the next page
       projectId: Google Cloud project ID
   - name: get_table_info
-    description: Get metadata for a BigQuery table.
+    description: Get metadata for a BigQuery table or BigLake table.
     params:
       datasetId: BigQuery dataset ID
       projectId: Google Cloud project ID
       tableId: BigQuery table ID
   - name: execute_sql_readonly
-    description: Run a read-only GoogleSQL query and return its results. Mutating statements and stored procedures are rejected.
+    description: |
+      Run a read-only GoogleSQL query and return its results. Mutating statements and stored procedures are rejected.
+      If the query does not finish within the synchronous timeout, it returns a job ID to poll with get_query_results or stop with cancel_job.
     params:
       dryRun: Validate the query and return processing statistics without running it
+      jobTimeoutMs: Job timeout in milliseconds. If exceeded, BigQuery attempts to stop the query job
+      labels: Labels to organize and group the query job
       projectId: Google Cloud project used for query execution and billing
       query: GoogleSQL query to execute
+      timeoutMs: "Maximum time in milliseconds to wait for the query to complete (default: 20,000)"
   - name: execute_sql
-    description: Run a GoogleSQL query, including statements that can create, update, or delete data.
+    description: |
+      Run a GoogleSQL query, including statements that can create, update, or delete data.
+      If the query does not finish within the synchronous timeout, it returns a job ID to poll with get_query_results or stop with cancel_job.
     params:
       dryRun: Validate the query and return processing statistics without running it
+      jobTimeoutMs: Job timeout in milliseconds. If exceeded, BigQuery attempts to stop the query job
+      labels: Labels to organize and group the query job
       projectId: Google Cloud project used for query execution and billing
       query: GoogleSQL query to execute
+      timeoutMs: "Maximum time in milliseconds to wait for the query to complete (default: 20,000)"
+  - name: get_query_results
+    description: |
+      Get the results of a BigQuery query job.
+      Use it to poll a job that returned job_complete false, or to page through the rows of a completed job.
+    params:
+      jobId: ID of the query job
+      location: Geographic location of the job
+      maxResults: Maximum number of rows to read
+      pageToken: Token for retrieving the next page
+      projectId: Google Cloud project ID of the query job
+      startIndex: Zero-based index of the starting row
+      timeoutMs: Maximum time in milliseconds to wait for the query to complete
+  - name: get_job
+    description: Get information and status about a BigQuery job, including its statistics and configuration.
+    params:
+      jobId: ID of the job
+      location: Geographic location of the job
+      projectId: Google Cloud project ID of the job
+  - name: cancel_job
+    description: Cancel a running BigQuery job, such as a query that did not finish within the synchronous timeout.
+    params:
+      jobId: ID of the job to cancel
+      location: Geographic location of the job
+      projectId: Google Cloud project ID of the job
