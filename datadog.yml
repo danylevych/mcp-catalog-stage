@@ -1,176 +1,308 @@
 name: Datadog
 entryKey: datadog
-shortDescription: "Monitor incidents, logs, dashboards, metrics, APM traces, and infrastructure with Datadog"
+serverUserType: singleUser
+shortDescription: Query Datadog observability data and manage platform features with Datadog's official MCP server
+upgradeNote: |
+  This replaces the Obot-hosted Datadog server with Datadog's official hosted MCP server.
+
+  - **Reconnect required:** Connect with Datadog OAuth or a Personal or Service Access Token. The previous API key, application key, and site settings are no longer used.
+  - **Region:** This entry connects to Datadog US1.
+  - **Tool changes:** Tool names, parameters, permissions, and available toolsets change.
 description: |
-  A Model Context Protocol (MCP) server that provides access to Datadog's monitoring and observability platform. This server enables AI agents to interact with key Datadog features including incidents, monitors, logs, dashboards, metrics, APM traces, infrastructure monitoring, and RUM analytics through a comprehensive set of tools.
+  Investigate logs, metrics, traces, monitors, dashboards, incidents, hosts, RUM, and more through [Datadog's vendor-hosted MCP server](https://docs.datadoghq.com/mcp_server/).
+
+  See Datadog's [official MCP server documentation](https://docs.datadoghq.com/mcp_server/) for setup instructions, authentication options, permissions, and current capabilities.
 
   ## Features
-  - **Observability Tools**: Leverage key Datadog monitoring features including incidents, monitors, logs, dashboards, and metrics through the MCP server
-  - **Extensible Design**: Designed to easily integrate with additional Datadog APIs, allowing for seamless future feature expansion
+  - **Core observability**: Search logs, metrics, traces, monitors, dashboards, incidents, hosts, services, events, notebooks, and RUM data.
+  - **Product toolsets**: Enable additional Datadog product-specific toolsets when needed, such as alerting, dashboards, security, synthetics, workflows, and Database Monitoring.
+  - **Datadog authorization**: OAuth authenticates as the Datadog user and respects their Datadog roles and resource permissions.
 
   ## What you'll need to connect
+  - **Datadog account**: The MCP server is available on supported commercial Datadog sites. It is not supported for Datadog GovCloud.
+  - **OAuth access**: Complete the Datadog OAuth flow when prompted. Your role requires `mcp_read` for read tools, `mcp_write` for write tools, and the underlying Datadog resource permissions. For non-interactive connections, optionally provide a Datadog Personal Access Token (PAT) or Service Access Token (SAT).
+  - **Regional endpoint**: This entry uses Datadog's US1 endpoint. For another Datadog site, follow the [official setup guide](https://docs.datadoghq.com/mcp_server/setup/) to use that site's endpoint.
 
-  **Required:**
-  - **Datadog API Key**: Your Datadog API key. API keys are unique to your organization. To create an API key, navigate to Organization settings, then click the `API keys`.
-  - **Datadog App Key**: Your Datadog application key. Application keys are associated with the user account that created them and by default have the permissions of the user who created them. To add a Datadog application key, navigate to Organization Settings > Application Keys. If you have the permission to create application keys, click New Key.
+  ## Important considerations
+  - The default core toolset includes read tools and notebook create/edit tools. Enable additional toolsets only when needed to conserve context and limit the available actions.
+  - Datadog documents fair-use limits of 50 tool calls per 10 seconds and 50,000 monthly tool calls, subject to change.
+  - Datadog retains remote-MCP usage, error, identity, and relevant prompt-context data for 120 days. Review the [official service documentation](https://docs.datadoghq.com/mcp_server/) before connecting sensitive workloads.
 
-  **Optional:**
-  - **Datadog Site**: The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`.
+  > **⚠️ Upgrade notice**
+  >
+  > If you're upgrading this server, note that this replaces the Obot-hosted Datadog server with Datadog's official hosted MCP server.
+  >
+  > - **Reconnect required:** Connect with Datadog OAuth or a Personal or Service Access Token. The previous API key, application key, and site settings are no longer used.
+  > - **Region:** This entry connects to Datadog US1.
+  > - **Tool changes:** Tool names, parameters, permissions, and available toolsets change.
+
 metadata:
-  categories: "Monitoring & Observability, SaaS & API Integrations"
+  categories: Monitoring & Observability, SaaS & API Integrations
+  repoURL: https://docs.datadoghq.com/mcp_server/
 icon: https://avatars.githubusercontent.com/u/365230?s=200&v=4
-repoURL: https://github.com/winor30/mcp-server-datadog
-runtime: containerized
-containerizedConfig:
-  image: ghcr.io/obot-platform/mcp-images/datadog:1.7.0
-  port: 8099
-  path: /
-  args:
-    - mcp-server-datadog
-toolPreview:
-  - name: cancel_downtime
-    description: Cancel a scheduled downtime in Datadog
-    params:
-      downtimeId: The ID of the downtime to cancel
-  - name: get_active_hosts_count
-    description: Get the total number of active hosts in Datadog (defaults to last 5 minutes)
-    params:
-      from: Number of seconds from which you want to get total number of active hosts (defaults to 2h)
-  - name: get_all_services
-    description: Extract all unique service names from logs
-    params:
-      from: Start time in epoch seconds
-      limit: Maximum number of logs to search through. Default is 1000.
-      query: Optional query filter for log search
-      to: End time in epoch seconds
-  - name: get_dashboard
-    description: Get a dashboard from Datadog
-    params:
-      dashboardId: The ID of the dashboard to fetch
-  - name: get_incident
-    description: Get an incident from Datadog
-    params:
-      incidentId: The ID of the incident to fetch
-  - name: get_logs
-    description: Search and retrieve logs from Datadog
-    params:
-      from: Start time in epoch seconds
-      limit: Maximum number of logs to return. Default is 100.
-      query: Datadog logs query string
-      to: End time in epoch seconds
-  - name: get_monitors
-    description: Get monitors status from Datadog
-    params:
-      groupStates: Filter monitors by their states
-      name: Filter monitors by name
-      tags: Filter monitors by tags
-  - name: get_rum_applications
-    description: Get all RUM applications in the organization
-    params: {}
-  - name: get_rum_events
-    description: Search and retrieve RUM events from Datadog
-    params:
-      from: Start time in epoch seconds
-      limit: Maximum number of events to return. Default is 100.
-      query: Datadog RUM query string
-      to: End time in epoch seconds
-  - name: get_rum_grouped_event_count
-    description: "Search, group and count RUM events by a specified dimension"
-    params:
-      from: Start time in epoch seconds
-      groupBy: Dimension to group results by. Default is application.name
-      query: Optional query filter for RUM search
-      to: End time in epoch seconds
-  - name: get_rum_page_performance
-    description: Get page (view) performance metrics from RUM data
-    params:
-      from: Start time in epoch seconds
-      metricNames: Array of metric names to retrieve
-      query: Optional query filter for RUM search
-      to: End time in epoch seconds
-  - name: get_rum_page_waterfall
-    description: Retrieve RUM page (view) waterfall data filtered by application name and session ID
-    params:
-      applicationName: Application name to filter events
-      sessionId: Session ID to filter events
-  - name: list_dashboards
-    description: Get list of dashboards from Datadog
-    params:
-      name: Filter dashboards by name
-      tags: Filter dashboards by tags
-  - name: list_downtimes
-    description: List scheduled downtimes from Datadog
-    params:
-      currentOnly: Return only currently active downtimes when true
-  - name: list_hosts
-    description: Get list of hosts from Datadog
-    params:
-      count: "Max number of hosts to return (max: 1000)"
-      filter: Filter string for search results
-      from: Search hosts from this UNIX timestamp
-      include_hosts_metadata: "Include host metadata (version, platform, etc)"
-      include_muted_hosts_data: Include muted hosts status and expiry
-      sort_dir: Sort direction (asc/desc)
-      sort_field: Field to sort hosts by
-      start: Starting offset for pagination
-  - name: list_incidents
-    description: Get incidents from Datadog
-    params:
-      pageOffset: Specific offset to use for pagination
-      pageSize: Size for a given page of results
-  - name: list_traces
-    description: Get APM traces from Datadog
-    params:
-      from: Start time in epoch seconds
-      limit: Maximum number of traces to return
-      operation: Filter by operation name
-      query: Datadog APM trace query string
-      service: Filter by service name
-      sort: Sort order for traces
-      to: End time in epoch seconds
-  - name: mute_host
-    description: Mute a host in Datadog
-    params:
-      end: POSIX timestamp for when the mute should end
-      hostname: The name of the host to mute
-      message: Message to associate with the muting of this host
-      override: "If true and the host is already muted, replaces existing end time"
-  - name: query_metrics
-    description: Query timeseries points of metrics from Datadog
-    params:
-      from: "Start of the queried time period, seconds since the Unix epoch."
-      query: "Datadog metrics query string. e.g. \"avg:system.cpu.user{*}\""
-      to: "End of the queried time period, seconds since the Unix epoch."
-  - name: schedule_downtime
-    description: Schedule a downtime in Datadog
-    params:
-      end: POSIX timestamp for the end of the downtime
-      message: A message to include with the downtime
-      monitorId: The ID of the monitor to mute
-      monitorTags: A list of monitor tags for filtering
-      recurrence: Recurrence settings for the downtime
-      scope: "Scope to apply downtime to (e.g. 'host:my-host')"
-      start: POSIX timestamp for the start of the downtime
-      timezone: "The timezone for the downtime (e.g. 'UTC', 'America/New_York')"
-  - name: unmute_host
-    description: Unmute a host in Datadog
-    params:
-      hostname: The name of the host to unmute
-config:
-  - name: Datadog API Key
-    key: DATADOG_API_KEY
-    description: Your Datadog API key. API keys are unique to your organization.
-    sensitive: true
-    required: true
-    usage: env
-  - name: Datadog App Key
-    key: DATADOG_APP_KEY
-    description: Your Datadog application key. Application keys are associated with the user account that created them and by default have the permissions of the user who created them.
-    sensitive: true
-    required: true
-    usage: env
-  - name: Datadog Site
-    key: DATADOG_SITE
-    description: "(Optional) The Datadog site of your organization, such as `datadoghq.eu` or `us3.datadoghq.com`. Default is `datadoghq.com`."
+runtime: remote
+remoteConfig:
+  fixedURL: https://mcp.datadoghq.com/v1/mcp
+  headers:
+  - name: Datadog Personal or Service Access Token
+    description: Optional. Use a Datadog PAT or SAT when OAuth is unavailable.
+    key: Authorization
     required: false
-    usage: env
+    sensitive: true
+    prefix: "Bearer "
+toolPreview:
+- name: aggregate_events
+  description: Aggregate Datadog events.
+  params:
+    computes: ""
+    from: ""
+    group_by: ""
+    max_tokens: ""
+    query: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
+- name: aggregate_rum_events
+  description: Aggregate Datadog RUM events.
+  params:
+    computes: ""
+    from: ""
+    group_by: ""
+    max_tokens: ""
+    query: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
+- name: aggregate_spans
+  description: Aggregate Datadog APM spans.
+  params:
+    computes: ""
+    from: ""
+    group_by: ""
+    max_tokens: ""
+    query: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
+- name: analyze_datadog_logs
+  description: Analyze Datadog logs with SQL.
+  params:
+    extra_columns: ""
+    filter: ""
+    from: ""
+    indexes: ""
+    max_tokens: ""
+    sql_query: ""
+    start_at: ""
+    storage_tier: ""
+    telemetry: ""
+    to: ""
+- name: get_change_stories
+  description: Retrieve Datadog change stories.
+  params:
+    context: ""
+    end_ts: ""
+    env: ""
+    filter_tags: ""
+    max_tokens: ""
+    service_name: ""
+    start_ts: ""
+    story_types: ""
+    telemetry: ""
+- name: get_datadog_dashboard
+  description: Retrieve a Datadog dashboard.
+  params:
+    dashboard_id: ""
+    include_widgets: ""
+    telemetry: ""
+- name: get_datadog_incident
+  description: Retrieve a Datadog incident.
+  params:
+    incident_id: ""
+    include_attachments: ""
+    include_follow_ups: ""
+    include_timeline: ""
+    max_tokens: ""
+    telemetry: ""
+    timeline_from: ""
+    timeline_to: ""
+- name: get_datadog_metric
+  description: Query Datadog metrics.
+  params:
+    formulas: ""
+    from: ""
+    interval: ""
+    max_tokens: ""
+    queries: ""
+    raw_data: ""
+    response_format: ""
+    telemetry: ""
+    to: ""
+    use_cloud_cost: ""
+- name: get_datadog_metric_context
+  description: Retrieve Datadog metric metadata.
+  params:
+    include_related_assets: ""
+    include_tag_values: ""
+    max_tokens: ""
+    metric_name: ""
+    scope_tags: ""
+    start_at: ""
+    tag_filter: ""
+    telemetry: ""
+    use_cloud_cost: ""
+    window: ""
+- name: get_datadog_notebook
+  description: Retrieve a Datadog notebook.
+  params:
+    include_comments: ""
+    max_tokens: ""
+    notebook_id: ""
+    telemetry: ""
+- name: get_datadog_trace
+  description: Retrieve a Datadog APM trace.
+  params:
+    expand_span_id: ""
+    extra_fields: ""
+    include_path: ""
+    max_tokens: ""
+    only_service_entry_spans: ""
+    telemetry: ""
+    trace_id: ""
+- name: list_datadog_skills
+  description: List Datadog skill guides.
+  params:
+    include_header: ""
+    query: ""
+    telemetry: ""
+- name: load_datadog_skill
+  description: Load a Datadog skill guide.
+  params:
+    header_only: ""
+    resource_path: ""
+    skill_name: ""
+    telemetry: ""
+- name: search_datadog_dashboards
+  description: Search Datadog dashboards.
+  params:
+    include_description: ""
+    include_template_variables: ""
+    max_queries_per_dashboard: ""
+    max_tokens: ""
+    query: ""
+    sort: ""
+    start_at: ""
+    telemetry: ""
+- name: search_datadog_events
+  description: Search Datadog events.
+  params:
+    from: ""
+    max_tokens: ""
+    query: ""
+    sort: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
+- name: search_datadog_hosts
+  description: Search Datadog hosts.
+  params:
+    max_tokens: ""
+    query: ""
+    start_at: ""
+    telemetry: ""
+- name: search_datadog_incidents
+  description: Search Datadog incidents.
+  params:
+    from: ""
+    max_tokens: ""
+    query: ""
+    semantic_query: ""
+    sort: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
+    with_facets: ""
+- name: search_datadog_logs
+  description: Search Datadog logs.
+  params:
+    clustering_pattern_field: ""
+    extra_fields: ""
+    from: ""
+    indexes: ""
+    max_tokens: ""
+    pattern_group_by: ""
+    query: ""
+    sort: ""
+    start_at: ""
+    storage_tier: ""
+    telemetry: ""
+    to: ""
+    use_log_patterns: ""
+- name: search_datadog_metrics
+  description: Search Datadog metrics.
+  params:
+    from: ""
+    max_tokens: ""
+    name_filter: ""
+    percentiles_enabled: ""
+    tag_filter: ""
+    telemetry: ""
+    use_cloud_cost: ""
+- name: search_datadog_monitors
+  description: Search Datadog monitors.
+  params:
+    include_tags: ""
+    max_tokens: ""
+    query: ""
+    sort: ""
+    start_at: ""
+    telemetry: ""
+- name: search_datadog_notebooks
+  description: Search Datadog notebooks.
+  params:
+    count: ""
+    filter: ""
+    include_facets: ""
+    max_tokens: ""
+    query: ""
+    sort: ""
+    start_at: ""
+    telemetry: ""
+- name: search_datadog_rum_events
+  description: Search Datadog RUM events.
+  params:
+    detailed_output: ""
+    from: ""
+    max_tokens: ""
+    query: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
+- name: search_datadog_service_dependencies
+  description: Search Datadog service dependencies.
+  params:
+    direction: ""
+    max_tokens: ""
+    service: ""
+    start_at: ""
+    team: ""
+    telemetry: ""
+- name: search_datadog_services
+  description: Search Datadog services.
+  params:
+    detailed_output: ""
+    max_tokens: ""
+    query: ""
+    start_at: ""
+    telemetry: ""
+- name: search_datadog_spans
+  description: Search Datadog APM spans.
+  params:
+    custom_attributes: ""
+    from: ""
+    max_tokens: ""
+    query: ""
+    sort: ""
+    start_at: ""
+    telemetry: ""
+    to: ""
