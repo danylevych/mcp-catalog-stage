@@ -1,0 +1,165 @@
+name: Zapier
+entryKey: zapier
+serverUserType: singleUser
+shortDescription: Access 30,000+ actions across 8,000+ apps in Zapier automation platform
+description: |
+  Access connected apps and run actions through [Zapier's MCP server](https://zapier.com/mcp).
+
+  See Zapier's [official MCP documentation](https://docs.zapier.com/mcp/get-started/connect) for setup instructions and current capabilities.
+
+  ## Features
+  - **Actions**: Call 30,000+ actions in Zapier
+  - **Apps**: Get access to 8,000+ apps in Zapier
+
+  ## What you'll need to connect
+  - **Zapier Account**: Active Zapier account (sign up at [zapier.com](https://zapier.com/))
+
+  When you connect, Zapier asks you to sign in and authorize Obot, and creates your MCP server during sign-in. Choose which apps and actions it exposes at [mcp.zapier.com](https://mcp.zapier.com); the tools the agent sees change with that selection.
+
+  ## Important considerations
+  - Zapier MCP calls count toward your Zapier plan's task usage.
+  - Actions run with the permissions of the app accounts you connected in Zapier.
+metadata:
+  categories: SaaS & API Integrations, Automation & Browsers
+icon: https://img.icons8.com/?size=100&id=by7K6EO4PeHT&format=png&color=000000
+repoURL: https://zapier.com/mcp
+runtime: remote
+remoteConfig:
+  fixedURL: https://mcp.zapier.com/api/v1/connect
+toolPreview:
+- name: discover_zapier_actions
+  description: 'Search 9,000+ apps to find actions you can enable. For authenticated services (Google Docs, Gmail, Sheets, Notion, Slack, Outlook, etc.), check here - generic web fetch tools cannot authenticate with these services. ALWAYS call this before saying ''I can''t access X'' or ''that app isn''t available''. Call inspect_zapier_actions first: it lists the apps already enabled, and THEN call this tool to discover and enable any apps and actions that you need but that are not returned by the inspect call. After finding what you need, use enable_zapier_action to add it.'
+  params:
+    app: Search for apps by name. Omit to see popular apps. Search 9,000+ available apps.
+- name: enable_zapier_action
+  description: Enable an app's actions on this MCP server. Use discover_zapier_actions first to get the exact selected_api ID, then pass it here. Always pass app_display_name from the app field returned by discover_zapier_actions so confirmations show a friendly name rather than the raw selected_api ID. Returns action details including the execute tool to use (execute_zapier_read_action or execute_zapier_write_action) and parameters. If authentication is required, also returns a URL to authenticate the app.
+  params:
+    selected_api: The selectedApi ID to enable (e.g., 'GmailCLIAPI', 'SlackCLIAPI'). Use the selected_api field from discover_zapier_actions.
+    app_display_name: Human-readable app name for display purposes (e.g., 'Gmail', 'Slack'). Always populate this from the app field returned by discover_zapier_actions or list_enabled_zapier_actions. Used to render friendly confirmation messages instead of the raw selected_api ID.
+    action: Specific action key to enable. If omitted or '*', all actions for the app are enabled.
+- name: disable_zapier_action
+  description: Remove an app's actions from this MCP server. Use inspect_zapier_actions to see which apps are enabled and their selected_api values. Always pass app_display_name (the human-readable app name from inspect_zapier_actions) so confirmations show a friendly name rather than the raw selected_api ID. Optionally specify an action key to remove only that specific action.
+  params:
+    selected_api: The selectedApi ID to disable (e.g., 'GmailCLIAPI', 'JiraSoftwareCloudCLIAPI'). Use the selected_api field from list_enabled_zapier_actions.
+    app_display_name: Human-readable app name for display purposes (e.g., 'Gmail', 'Zendesk'). Always populate this from the app field returned by list_enabled_zapier_actions. Used to render friendly confirmation messages instead of the raw selected_api ID.
+    action: Specific action key to remove. If omitted, all actions for the app are removed.
+- name: inspect_zapier_actions
+  description: 'Call `inspect_zapier_actions` first when you create a workflow or automation, before configuring a trigger or action for Gmail, Google Sheets, Google Drive, Slack, or any other app the user has connected, and before any execute_zapier_read_action or execute_zapier_write_action call. Call `inspect_zapier_actions` with no arguments first to list every enabled app with its exact `selected_api`; then call it again with one `selected_api` from that listing for the app''s actions (`action`, `action_type`, `tool_name`), including the read action that samples a trigger, then with `tool_name` for one action''s parameter schema. These apps handle OAuth automatically — use them instead of generic URL fetching for authenticated services. For a parameter flagged `is_dynamic_enum: true`, call `inspect_zapier_actions` again with `tool_name`, `enum_property`, and any parent values in `params` to resolve values. For actions with `dynamic_properties_depends_on`, settle those parameters first, then call this tool again with `tool_name` and `params` to get `dynamic_properties_schema`. To learn what an action returns, call `inspect_zapier_actions` with its `tool_name`, the same `params`, and `include_output_schema: true`; `output_schema` is the declared shape of the records, nested to match them. For a trigger, type the workflow''s trigger input from it when a sample read returns no records. Sampled records win where they disagree, and declared types are advisory: a field declared as a string can arrive as a list. If the unfiltered listing has no entry for the app you need, you MUST call discover_zapier_actions next — NEVER say ''I can''t do that'' without checking discover_zapier_actions first. When you resolve a value from the user''s request, matching a single record is not proof it is the one they meant: if their input is partial or ambiguous (e.g. a first name, or a search with several close matches), enumerate the candidates and let the user pick before passing a value to an execute call. Each app''s `connections.default` names the account its actions run against. If that account doesn''t fit the apparent context of the request (e.g. a personal address on a work task), flag it to the user before executing and note the account can be switched per action by passing a different `connection_id` (list the options with list_zapier_connections, or connect the right account via manage_zapier_connections) — do this even when only one account is connected.'
+  params:
+    selected_api: Filter by selectedApi (e.g., 'GoogleMailV2CLIAPI'). Use the `selected_api` from a previous list call or from discover_zapier_actions. Omit to list all apps.
+    action: Filter by action key. Omit to list all actions.
+    tool_name: Filter by the `tool_name` returned for an action. Preferred when resolving an exact action schema because it is collision-safe.
+    params: Partial argument values for the action. Pass parent values here to resolve dynamic enum values and the `dynamic_properties` schema inline before executing.
+    enum_property: The dynamic enum property to resolve or search. Required to get `dynamic_enum_values`; omit when you only need the action's parameter schema.
+    enum_search: Optional search text for `enum_property` when its dynamic enum has many values.
+    enum_cursor: Pagination cursor from a previous dynamic enum response. Use with `enum_property`.
+    connection_id: 'Optional. The connected account to run this action against. Apps can have multiple connected accounts, and by default the action runs against the app''s default connection — so you normally do NOT need to set this, and should not ask the user which account to use on every call. Set it only when the user''s request implies or names a specific account, or asks to switch accounts: call `list_zapier_connections` for this app, pick the matching `connection_id`, and if more than one plausibly fits, confirm with the user before executing. If the user references an account that isn''t connected yet, offer to connect it via manage_zapier_connections instead of refusing. Change the default connection anytime with manage_zapier_connections.'
+    include_output_schema: 'Set to true together with `tool_name` to also get `output_schema`: the declared shape of the records the action returns, nested to match them, each field tagged with its Zapier key as `x-zapier-key`. Pass the same `params` you would execute with, since some apps (such as spreadsheet columns) only declare their fields once those are set.'
+- name: execute_zapier_read_action
+  description: 'Execute a search or read action to get data from a connected app. REQUIRED: You MUST call inspect_zapier_actions first to get the exact action key, tool_name, and parameter schema. NEVER guess action names — they are NOT intuitive and WILL fail. If the app isn''t enabled, use discover_zapier_actions then enable_zapier_action first. Pass exact argument values in `params`. For dynamic enum parameters, call inspect_zapier_actions again with `tool_name`, `enum_property`, and parent values in `params`. For actions with `dynamic_properties_depends_on`, call inspect_zapier_actions again with `tool_name` and settled parent params to learn `dynamic_properties_schema`. Before executing, be confident that every value in `params` correctly and uniquely identifies what the user asked for — especially fields naming a person, recipient, channel, account, record, or file. If the user gave only partial or ambiguous information (e.g. just a first name, or a term that could match several entities), do NOT assume a lookup that returns a single match is the right one: many lookups return one ''best'' match even when others exist. Enumerate the candidates first — prefer a search or list action that can return multiple matches, or widen your query — and when more than one plausibly fits, present the options and let the user choose rather than guessing.'
+  params:
+    selected_api: The selectedApi ID of the app to execute against (e.g. 'SlackCLIAPI'). Use the `selected_api` from inspect_zapier_actions. Required so the action resolves to a single app when the same action key exists for more than one app.
+    action: Action key to execute. Use inspect_zapier_actions to get exact keys.
+    tool_name: Collision-safe action identifier from inspect_zapier_actions. Pass it whenever available so actions that share the same key resolve correctly.
+    params: Exact argument values for the action, keyed by parameter name. Use `inspect_zapier_actions` to learn the parameter schema. For a parameter flagged `is_dynamic_enum`, resolve its value first by calling `inspect_zapier_actions` again with `tool_name`, `enum_property`, and any known parent values in `params`. For actions with `dynamic_properties_depends_on`, settle those parameters then call `inspect_zapier_actions` again with `tool_name` and `params` to learn the `dynamic_properties_schema`, then nest the resolved keys under a `dynamic_properties` object inside `params`.
+    connection_id: 'Optional. The connected account to run this action against. Apps can have multiple connected accounts, and by default the action runs against the app''s default connection — so you normally do NOT need to set this, and should not ask the user which account to use on every call. Set it only when the user''s request implies or names a specific account, or asks to switch accounts: call `list_zapier_connections` for this app, pick the matching `connection_id`, and if more than one plausibly fits, confirm with the user before executing. If the user references an account that isn''t connected yet, offer to connect it via manage_zapier_connections instead of refusing. Change the default connection anytime with manage_zapier_connections.'
+- name: execute_zapier_write_action
+  description: 'Execute a write or create action in a connected app. REQUIRED: You MUST call inspect_zapier_actions first to get the exact action key, tool_name, and parameter schema. NEVER guess action names — they are NOT intuitive and WILL fail. If the app isn''t enabled, use discover_zapier_actions then enable_zapier_action first. Pass exact argument values in `params`. For dynamic enum parameters, call inspect_zapier_actions again with `tool_name`, `enum_property`, and parent values in `params`. For actions with `dynamic_properties_depends_on`, call inspect_zapier_actions again with `tool_name` and settled parent params to learn `dynamic_properties_schema`. Before executing, be confident that every value in `params` correctly and uniquely identifies what the user asked for — especially fields naming a person, recipient, channel, account, record, or file. If the user gave only partial or ambiguous information (e.g. just a first name, or a term that could match several entities), do NOT assume a lookup that returns a single match is the right one: many lookups return one ''best'' match even when others exist. Enumerate the candidates first — prefer a search or list action that can return multiple matches, or widen your query — and when more than one plausibly fits, present the options and let the user choose rather than guessing. Write actions have real, often irreversible side effects (sending messages, creating or modifying records), so confirm the target whenever there is any doubt.'
+  params:
+    selected_api: The selectedApi ID of the app to execute against (e.g. 'SlackCLIAPI'). Use the `selected_api` from inspect_zapier_actions. Required so the action resolves to a single app when the same action key exists for more than one app.
+    action: Action key to execute. Use inspect_zapier_actions to get exact keys.
+    tool_name: Collision-safe action identifier from inspect_zapier_actions. Pass it whenever available so actions that share the same key resolve correctly.
+    params: Exact argument values for the action, keyed by parameter name. Use `inspect_zapier_actions` to learn the parameter schema. For a parameter flagged `is_dynamic_enum`, resolve its value first by calling `inspect_zapier_actions` again with `tool_name`, `enum_property`, and any known parent values in `params`. For actions with `dynamic_properties_depends_on`, settle those parameters then call `inspect_zapier_actions` again with `tool_name` and `params` to learn the `dynamic_properties_schema`, then nest the resolved keys under a `dynamic_properties` object inside `params`.
+    connection_id: 'Optional. The connected account to run this action against. Apps can have multiple connected accounts, and by default the action runs against the app''s default connection — so you normally do NOT need to set this, and should not ask the user which account to use on every call. Set it only when the user''s request implies or names a specific account, or asks to switch accounts: call `list_zapier_connections` for this app, pick the matching `connection_id`, and if more than one plausibly fits, confirm with the user before executing. If the user references an account that isn''t connected yet, offer to connect it via manage_zapier_connections instead of refusing. Change the default connection anytime with manage_zapier_connections.'
+- name: list_zapier_connections
+  description: 'List the Zapier connections (authenticated accounts) available for an app. Use the `selected_api` from discover_zapier_actions or the action-listing tool. Returns each connection''s `id` field. Pass that value as the `connection_id` argument to execute_zapier_read_action / execute_zapier_write_action to run with that specific account. By default only the user''s own connections are returned; pass `include_shared: true` to also return connections shared with them, but only show the user their shared connections if they explicitly ask for it. Paginated via `cursor`.'
+  params:
+    selected_api: The selectedApi ID of the app to list connections for (e.g. 'SlackCLIAPI'). Use the `selected_api` from discover_zapier_actions or the action-listing tool.
+    cursor: Pagination cursor from a previous response's `next_cursor`. Omit to fetch the first page.
+    limit: Maximum number of connections to return per page (1-100). Defaults to 20.
+    include_shared: Include connections shared with the user by others. By default only the user's own connections are returned. Only show the user their shared connections if they explicitly ask for it.
+- name: manage_zapier_connections
+  description: Manage an app's Zapier connections. Returns a URL the user can open to connect a new account, and optionally sets the app's default connection. An app REQUIRES a default connection before any of its actions can run. If the user has no default connection for the app they want to use, share the returned `auth_url` with them and ask them to tell you once they have added the connection; after they confirm, call list_zapier_connections to find the new connection's `id`, then call this tool again with that value as `default_connection_id` to set it as the default. `selected_api` MUST come verbatim from discover_zapier_actions or inspect_zapier_actions — never guess or construct it (e.g. Gmail is `GoogleMailV2CLIAPI`, not `GmailCLIAPI`). If you don't already have it, call discover_zapier_actions first. To set the default account every action for this app should use, pass `default_connection_id` (look it up with list_zapier_connections). Share the returned `auth_url` with the user; after they finish, call list_zapier_connections to see the new connection.
+  params:
+    selected_api: The exact selectedApi ID of the app (e.g. 'SlackCLIAPI'). Must come verbatim from discover_zapier_actions (or the action-listing tool) — do not guess or construct it (e.g. Gmail is 'GoogleMailV2CLIAPI', not 'GmailCLIAPI').
+    app_display_name: Optional human-readable app name (from discover_zapier_actions) used to make the response easier to read.
+    default_connection_id: Optional. Set this connection as the app's default so every action for the app runs against it without passing `connection_id` each time. Look up the id with list_zapier_connections. Omit to only get a URL for connecting a new account.
+- name: send_feedback
+  description: Send feedback about your experience with Zapier MCP to the Zapier team.
+  params:
+    feedback: Feedback message to send to the Zapier MCP team
+    feedback_positive: Whether this is positive feedback (true) or negative (false)
+- name: auto_provision_mcp
+  description: Automatically set up this MCP server based on the user's existing connected accounts. Finds apps the user has authenticated, enables their actions, and binds authentication — all in one call. Also returns the user's top Zap workflow titles so you can suggest relevant skills. Run this when the user has no tools enabled yet, or when they ask to set up their MCP server quickly.
+- name: list_zapier_skills
+  description: Lists the user's saved Zapier Skills with descriptions. Skills are reusable markdown instructions for tasks the user runs through their connected apps — useful when a request resembles a known workflow (e.g. 'onboard me'). The catalog is dynamic and may have changed since a previous call. Pair with get_zapier_skill to load a skill's full content, or create_zapier_skill to save a new workflow.
+- name: get_zapier_skill
+  description: Returns the full markdown definition of a saved Zapier Skill by name, along with any appended execution instructions. Typically paired with list_zapier_skills, which surfaces available skill names. The catalog includes a "zapier:onboarding" skill that walks new users through getting started with their Zapier MCP server.
+  params:
+    name: The exact name of the skill to retrieve
+- name: create_zapier_skill
+  description: 'Call this only after the user has confirmed the skill''s name and steps. Saves a workflow as a reusable Zapier Skill — a good fit for multi-step workflows the user runs repeatedly or tool calls that always use the same parameters. For a high-quality skill: (1) action keys and parameter schemas should come from list_enabled_zapier_actions, (2) static values should be resolved up front (e.g. an email to a Slack user ID), (3) any ambiguity about targets, recipients, or scope should be resolved with the user before creation, (4) known parameter values are pre-filled; only runtime-computed parameters are left bare. Re-using results from earlier in the conversation avoids redundant calls.'
+  params:
+    name: Short, unique name for this skill (e.g. 'create jira ticket', 'daily standup'). Names are case-insensitive.
+    description: One-sentence description of what this skill does
+    skillDefinition: 'Full markdown skill definition.
+
+
+      BEFORE writing this definition, ensure the following have been done (skip any step whose results are already available from earlier in this conversation):
+
+      1. list_enabled_zapier_actions called for each app involved — to get exact action keys and parameter schemas.
+
+      2. User-specific configuration gathered — project keys, channel names, default assignees, recurring values.
+
+      3. Ambiguities resolved — if the workflow has unclear targets, recipients, or scope, ASK the user before proceeding. E.g. ''DM the user in the list, or DM you?'', ''Which Jira project?'', ''Send to the channel or to you directly?''
+
+      4. Static values resolved and validated — e.g. email resolved to a Slack user ID via a lookup action.
+
+
+      If any of these were already done earlier in the conversation, reuse those results. Do NOT repeat calls you have already made.
+
+
+      STRUCTURE the skill definition with these sections:
+
+      - Title and one-line description
+
+      - ''## Validated fixed values'' — all static IDs, names, keys discovered or confirmed during creation
+
+      - ''## Actions'' — each ZapierAction reference with the FULL parameter signature. Quote every param value that is known and fixed. Leave bare only params that must be computed at runtime.
+
+      - ''## Runtime instructions'' — numbered steps for execution
+
+      - ''## Constraints'' — what the agent must NOT do (e.g. do not re-resolve known IDs)
+
+
+      Reference each Zapier action inline with:
+
+      ZapierAction[app:action](param: "locked_value", dynamic_param)
+
+
+      Use the exact `app` and `key` values from list_enabled_zapier_actions.
+
+      Quoted param values are locked and forwarded directly at execution.
+
+      Bare param names are filled by skill logic at runtime.
+
+
+      IMPORTANT: Maximize locked params. Every param that CAN be resolved at creation time MUST be quoted. The goal is zero unnecessary API calls at runtime. Leverage any action results, user IDs, or parameter values already obtained in this conversation.'
+- name: update_zapier_skill
+  description: Update an existing Zapier Skill's description or content. Use when the user wants to refine a skill, fix an issue, or add new instructions.
+  params:
+    name: The exact name of the skill to update
+    description: Updated one-sentence description (optional)
+    skillDefinition: Updated full markdown skill definition (optional). Use ZapierAction[app:action](params) format for action references.
+- name: delete_zapier_skill
+  description: Permanently delete a Zapier Skill by name.
+  params:
+    name: The exact name of the skill to delete
+- name: write_code_action
+  description: 'Create or update a custom code action for an app. Before creating one, use inspect_zapier_actions to check enabled actions, then use discover_zapier_actions to search for an existing action to enable. Only use this when no Zapier action supports the required operation and the app''s service API should support it. The code is generated from your requirements and executes in a secure sandbox with authenticated API access. IMPORTANT: Never include API keys, tokens, passwords, or other credentials in the requirements — code actions authenticate automatically through Zapier''s connected accounts. If a code action with the same name already exists, it will be regenerated with the new requirements. After creation, the action is immediately available as a tool.'
+  params:
+    selected_api: The app's API identifier from discover_zapier_actions (e.g. 'GoogleMailV2CLIAPI', 'JiraSoftwareCloudCLIAPI')
+    code_action_name: A short, descriptive name for the code action (e.g. 'list_channel_users', 'close_stale_issues'). Used as the tool name suffix.
+    requirements: Natural language description of what the code action should do. NEVER include API keys, tokens, or credentials — authentication is handled automatically via connected accounts. Be specific about the API endpoint, data format, and any filtering/pagination needs.
+- name: get_configuration_url
+  description: Returns the URL where users can configure this MCP server - adding, editing, or removing actions. Provide this URL to users who want to customize their available tools.
