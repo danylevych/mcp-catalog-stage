@@ -33,27 +33,31 @@ uvxConfig:
   package: mcp-proxy-for-aws-cli@1.7.0
   args:
     - https://aws-mcp.eu-central-1.api.aws/mcp
-env:
+config:
   - key: AWS_ACCESS_KEY_ID
     name: AWS Access Key ID
     required: true
     sensitive: true
     description: Your AWS Access Key ID
+    usage: env
   - key: AWS_SECRET_ACCESS_KEY
     name: AWS Secret Access Key
     required: true
     sensitive: true
     description: Your AWS Secret Access Key
+    usage: env
   - key: AWS_SESSION_TOKEN
     name: AWS Session Token
     required: false
     sensitive: true
     description: Only required for temporary credentials, such as those from aws sso login or STS AssumeRole
+    usage: env
   - key: AWS_REGION
     name: AWS Region
     required: true
     sensitive: false
     description: Default Region for AWS operations, for example eu-central-1 or us-east-1
+    usage: env
 toolPreview:
   - name: aws___run_script
     description: Execute Python code in a sandboxed environment with AWS API access through boto3. Use it to list resources, make parallel API calls, and run multi-step or cross-service workflows.

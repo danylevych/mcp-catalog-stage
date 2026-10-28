@@ -31,12 +31,13 @@ repoURL: https://grafana.com/docs/grafana-cloud/ai-tools/mcp-servers/cloud-mcp/
 runtime: remote
 remoteConfig:
   fixedURL: https://mcp.grafana.com/mcp
-  headers:
+config:
   - name: Grafana Cloud Stack URL
     description: Optional Grafana Cloud stack URL used to skip stack selection during OAuth authorization (for example, https://my-stack.grafana.net)
     key: X-Grafana-URL
     required: false
     sensitive: false
+    usage: header
 toolPreview:
 - name: add_activity_to_incident
   description: Add activity to an incident.

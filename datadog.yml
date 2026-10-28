@@ -43,13 +43,14 @@ icon: https://avatars.githubusercontent.com/u/365230?s=200&v=4
 runtime: remote
 remoteConfig:
   fixedURL: https://mcp.datadoghq.eu/v1/mcp
-  headers:
+config:
   - name: Datadog Personal or Service Access Token
     description: Optional. Use a Datadog PAT or SAT when OAuth is unavailable.
     key: Authorization
     required: false
     sensitive: true
     prefix: "Bearer "
+    usage: header
 toolPreview:
 - name: aggregate_events
   description: Aggregate Datadog events.
