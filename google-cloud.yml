@@ -1,0 +1,50 @@
+name: Google Cloud
+entryKey: google-cloud
+serverUserType: singleUser
+shortDescription: Run gcloud and bq commands across Google Cloud through Google's managed Cloud CLI MCP server
+description: |
+  Connect to Google's managed [Cloud CLI MCP server](https://docs.cloud.google.com/sdk/use-gcloud-mcp) to run `gcloud` and `bq` commands in your Google Cloud projects: inspect and manage Compute Engine, GKE, Cloud Run, Cloud Storage, IAM, Logging, Monitoring, BigQuery, and every other service the Google Cloud CLI covers.
+
+  See Google's [Cloud CLI MCP reference](https://docs.cloud.google.com/sdk/reference/mcp) for the current tools and limits.
+
+  ## What you'll need to connect
+
+  Ask your Google Cloud administrator to:
+
+  1. Enable billing and the [Cloud CLI Execution API](https://console.cloud.google.com/apis/enableflow?apiid=cloudcli.googleapis.com) (`cloudcli.googleapis.com`) in the project used for API quota.
+  2. Grant your Google identity the [MCP Tool User](https://cloud.google.com/iam/docs/roles-permissions/mcp#mcp.toolUser) role, plus the roles for the resources and actions you need. For read-only access, use viewer roles.
+  3. Ensure your Obot administrator has configured a Google Web OAuth client for this catalog entry.
+
+  When you connect, Google asks you to authorize Obot. Commands run with your Google identity and its IAM permissions, and Organization Policy constraints are enforced.
+
+  See Google's [MCP authentication guide](https://cloud.google.com/mcp/authenticate-mcp) for complete authentication instructions.
+
+  ## Important considerations
+  - The server is in Preview and subject to Google's Pre-GA Offerings Terms.
+  - Commands are not restricted to reads: anything your IAM permissions allow, including deleting resources, can run.
+  - Unsupported commands include `alpha` and `beta` variants, `gcloud auth`, `gcloud config`, `gcloud iam service-accounts`, `gcloud init`, `bq init`, `bq pyshell`, and `bq shell`.
+metadata:
+  categories: Cloud Infrastructure, DevOps
+icon: https://avatars.githubusercontent.com/u/2810941?s=48&v=4
+repoURL: https://docs.cloud.google.com/sdk/use-gcloud-mcp
+runtime: remote
+remoteConfig:
+  fixedURL: https://cloudcli.googleapis.com/mcp
+  staticOAuthRequired: true
+toolPreview:
+  - name: run_gcloud_command
+    description: |
+      Execute a single gcloud CLI command in a Google Cloud project. It can create, update, or delete resources.
+      Long options use `--flag=value`, project-scoped commands take `--project=PROJECT_ID`, and long-running operations should pass `--async`.
+    params:
+      command: The full gcloud command line to run as a single string
+      inputFiles: Files to make available to the command
+      project: Project for Cloud CLI Execution API enablement and quota, as projects/PROJECT_ID
+  - name: run_bq_command
+    description: |
+      Execute a single BigQuery CLI (bq) command. It can create, update, or delete BigQuery resources.
+      Regional operations need `--location`, and long-running jobs should pass `--nosync`.
+    params:
+      command: The full bq command line to run as a single string
+      inputFiles: Files to make available to the command
+      project: Project for Cloud CLI Execution API enablement and quota, as projects/PROJECT_ID
