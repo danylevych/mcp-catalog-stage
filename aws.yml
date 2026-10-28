@@ -1,0 +1,95 @@
+name: AWS
+entryKey: aws
+serverUserType: singleUser
+shortDescription: Work with AWS resources, documentation, and best practices through AWS's managed MCP server
+description: |
+  Connect to [AWS MCP Server](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/getting-started-aws-mcp-server.html), AWS's managed remote MCP server, through the [MCP Proxy for AWS](https://github.com/aws/mcp-proxy-for-aws), which signs every request with your AWS credentials (SigV4).
+
+  ## Features
+  - **AWS API access**: Run Python scripts that call any AWS API through boto3 in a sandbox hosted by AWS
+  - **S3 transfers**: Generate pre-signed S3 URLs for uploads and downloads
+  - **AWS knowledge**: Search and read AWS documentation, retrieve AWS skills, and check regional availability of services, APIs, and CloudFormation resources
+
+  ## What you'll need to connect
+
+  **Required:**
+  - **AWS Access Key ID** and **AWS Secret Access Key**: Credentials of the IAM user or role the agent acts as
+  - **AWS Region**: The Region AWS operations run in by default, for example `eu-central-1` or `us-east-1`. The agent can still target another Region in a request.
+
+  **Optional:**
+  - **AWS Session Token**: Required only for temporary credentials such as SSO or STS AssumeRole
+
+  ## Important considerations
+  - The agent can do anything the credentials allow. For read-only access, use credentials limited to the AWS managed policy `ReadOnlyAccess`.
+  - This entry connects to the AWS MCP Server endpoint in Europe (Frankfurt). The endpoint only determines where the server runs; AWS operations run in the Region you configure.
+
+  See AWS's [IAM guide for managed AWS MCP servers](https://aws.amazon.com/blogs/security/understanding-iam-for-managed-aws-mcp-servers/) to restrict what the agent can do with IAM condition keys.
+metadata:
+  categories: Infrastructure, Cloud Services, DevOps
+icon: https://avatars.githubusercontent.com/u/3299148?s=48&v=4
+repoURL: https://github.com/aws/mcp-proxy-for-aws
+runtime: uvx
+uvxConfig:
+  package: mcp-proxy-for-aws-cli@1.7.0
+  args:
+    - https://aws-mcp.eu-central-1.api.aws/mcp
+env:
+  - key: AWS_ACCESS_KEY_ID
+    name: AWS Access Key ID
+    required: true
+    sensitive: true
+    description: Your AWS Access Key ID
+  - key: AWS_SECRET_ACCESS_KEY
+    name: AWS Secret Access Key
+    required: true
+    sensitive: true
+    description: Your AWS Secret Access Key
+  - key: AWS_SESSION_TOKEN
+    name: AWS Session Token
+    required: false
+    sensitive: true
+    description: Only required for temporary credentials, such as those from aws sso login or STS AssumeRole
+  - key: AWS_REGION
+    name: AWS Region
+    required: true
+    sensitive: false
+    description: Default Region for AWS operations, for example eu-central-1 or us-east-1
+toolPreview:
+  - name: aws___run_script
+    description: Execute Python code in a sandboxed environment with AWS API access through boto3. Use it to list resources, make parallel API calls, and run multi-step or cross-service workflows.
+    params:
+      code: Python code to execute
+  - name: aws___get_presigned_url
+    description: Generate pre-signed S3 URLs for uploading or downloading files.
+    params:
+      requests: Array of 1-25 presigned URL requests, each with operation, bucket, key, and optional region and expiry
+  - name: aws___get_tasks
+    description: Poll the status of long-running tasks started by aws___run_script.
+    params:
+      task_ids: One or more task IDs (up to 3) from previous tool invocations
+      poll_iteration: Poll counter, starting at 1 and incremented on each call
+  - name: aws___search_documentation
+    description: Search AWS documentation, including API references, best practices, service guides, and AWS skills.
+    params:
+      search_phrase: Keywords to search for
+      topics: Up to 3 topics to search in
+      limit: Maximum number of results to return (default 4)
+  - name: aws___read_documentation
+    description: Fetch full AWS documentation pages as markdown.
+    params:
+      requests: "List of {url, max_length?, start_index?}"
+  - name: aws___retrieve_skill
+    description: Retrieve an AWS skill with workflows, best practices, and reference material.
+    params:
+      skill_name: Exact skill name from an aws___search_documentation result
+      file: Optional file path within the skill
+  - name: aws___list_regions
+    description: Retrieve a list of all AWS Regions.
+    params: {}
+  - name: aws___get_regional_availability
+    description: Check AWS regional availability for services, features, SDK APIs, and CloudFormation resources.
+    params:
+      regions: AWS Region codes (max 10)
+      resource_type: "product, api, or cfn"
+      filters: Exact AWS product, API, or CloudFormation resource names
+      next_token: Pagination token
