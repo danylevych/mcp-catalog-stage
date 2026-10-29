@@ -1,0 +1,213 @@
+name: SonarQube Cloud
+entryKey: sonarqube-cloud
+serverUserType: singleUser
+shortDescription: Review code quality, security issues, and quality gates in SonarQube Cloud through Sonar's hosted MCP server
+description: |
+  Connect to [SonarQube Cloud's hosted MCP server](https://docs.sonarsource.com/sonarqube-mcp-server/setup/sonarqube-cloud-hosted) to inspect the code quality and security of your SonarQube Cloud projects.
+
+  ## Features
+  - **Issues**: Search bugs, vulnerabilities, and code smells, and change their status when write access is enabled
+  - **Quality gates**: Check whether a project or pull request passes its quality gate
+  - **Measures**: Read coverage, duplications, complexity, and other project metrics
+  - **Security hotspots**: Review security hotspots that need a human decision
+  - **Dependency risks**: Inspect vulnerable and risky dependencies
+  - **Rules and projects**: Look up rule descriptions and list organization projects
+
+  ## What you'll need to connect
+
+  **Required:**
+  - **SonarQube Cloud token**: A personal user token from **My Account → Security** in SonarQube Cloud. The agent acts with your permissions.
+
+  **Optional:**
+  - **Organization key**: Fixes the organization so the agent does not have to look it up. Without it, the agent passes the organization on each tool call.
+  - **Read-only mode**: Read-only is the server's default. Choose **Read and write** to let the agent change issue status and other data.
+
+  ## Important considerations
+  - This entry is for **SonarQube Cloud** (sonarcloud.io). SonarQube Server exposes its own MCP endpoint on the server and needs a separate entry.
+  - This entry connects to the default SonarQube Cloud region. Organizations in the US region use `https://api.sonarqube.us/mcp` and need a separate entry.
+  - The hosted server does not include local analysis tools such as Sonar Vortex or the SonarQube for IDE bridge.
+metadata:
+  categories: Developer Tools, Security
+icon: https://avatars.githubusercontent.com/u/545988?v=4
+repoURL: https://github.com/SonarSource/sonarqube-mcp-server
+runtime: remote
+remoteConfig:
+  fixedURL: https://api.sonarcloud.io/mcp
+config:
+  - name: SonarQube Cloud Token
+    description: Personal user token from My Account → Security in SonarQube Cloud
+    key: Authorization
+    required: true
+    sensitive: true
+    prefix: "Bearer "
+    usage: header
+  - name: Organization Key
+    description: Optional. Your SonarQube Cloud organization key, for example my-company
+    key: SONARQUBE_ORG
+    required: false
+    sensitive: false
+    usage: header
+  - name: Access Mode
+    description: Optional. Read-only is the server's default.
+    key: SONARQUBE_READ_ONLY
+    required: false
+    sensitive: false
+    usage: header
+    options:
+      - name: Read-only
+        value: "true"
+      - name: Read and write
+        value: "false"
+toolPreview:
+- name: list_organizations
+  description: List SonarQube Cloud organizations that a user is a member of.
+- name: change_sonar_issue_status
+  description: 'Change the status of an issue. This tool can be used to change the status of an issue to "accept", "falsepositive" or to "reopen" an issue.
+
+    An example request could be: I would like to accept the issue having the key "AX-HMISMFixnZED"
+
+    You can optionally add a comment to explain your triage decision.'
+  params:
+    comment: An optional comment explaining the status change
+    key: The key of the issue which status should be changed
+    status: The new status of the issue
+- name: search_my_sonarqube_projects
+  description: Find SonarQube projects in your organization. Supports searching by project name or key. Use this first when projectKey is unknown - most other tools require the project key from this response.
+  params:
+    q: An optional search query to filter projects by name (partial match) or key (exact match).
+    pageIndex: An optional 1-based page index. Defaults to 1.
+    organization: Organization key. Use only when SONARQUBE_ORG is unset; call list_organizations if ambiguous.
+    pageSize: An optional page size. Must be greater than 0 and less than or equal to 500. Defaults to 500.
+- name: search_sonar_issues_in_projects
+  description: Search for issues (bugs, vulnerabilities, code smells) in my organization's projects. Filter by severities=['HIGH','BLOCKER'] for critical issues, impactSoftwareQualities=['SECURITY'] for security, issueStatuses=['OPEN'] to exclude resolved.
+  params:
+    issueKey: An optional list of issue keys to fetch specific issues
+    pageSize: An optional page size. Must be greater than 0 and less than or equal to 500. Defaults to 100.
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+    tags: An optional list of issue tags to filter by. Tags are lowercase, e.g. ['security','convention']
+    impactSoftwareQualities: An optional list of software qualities to filter by
+    issueStatuses: 'An optional list of issue statuses to filter by. Note: IN_SANDBOX is valid only for SonarQube Server'
+    pageIndex: An optional 1-based page index. Defaults to 1.
+    organization: Organization key. Use only when SONARQUBE_ORG is unset; call list_organizations if ambiguous.
+    files: An optional list of component keys (files, directories, modules) to filter issues
+    projectKeys: An optional list of SonarQube project keys to look in
+    inNewCodePeriod: Only return issues in the new code period. Requires exactly one entry across projectKeys and files
+    severities: An optional list of severities to filter by
+- name: search_security_hotspots
+  description: Search for Security Hotspots in a project.
+  params:
+    projectKey: The key of the project or application to search in. Required unless hotspotKeys is provided.
+    pageIndex: An optional 1-based page index. Defaults to 1.
+    onlyMine: If true, only Security Hotspots assigned to the current user are returned
+    hotspotKeys: Comma-separated list of specific Security Hotspot keys to retrieve. Required unless projectKey is provided.
+    files: An optional list of file paths to filter Security Hotspots
+    pageSize: An optional page size. Must be greater than 0 and less than or equal to 500. Defaults to 100.
+    sinceLeakPeriod: If true, only Security Hotspots created since the leak period (new code period) are returned
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    resolution: Filter by resolution (when status is REVIEWED)
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+    status: Filter by review status
+- name: show_security_hotspot
+  description: Get detailed information about a specific Security Hotspot, including rule details, code context, flows, and comments.
+  params:
+    hotspotKey: The key of the Security Hotspot to retrieve
+- name: change_security_hotspot_status
+  description: "Change the status of a Security Hotspot to review it. When marking as REVIEWED, you must specify a resolution.\n- TO_REVIEW: Mark the Security Hotspot as needing review\n- REVIEWED: Mark the Security Hotspot as reviewed with one of these resolutions:\n  * FIXED: A fix has been implemented\n  * SAFE: Reviewed and determined to be safe\n  * ACKNOWLEDGED: Acknowledged as a risk but accepted\nYou can optionally add a comment to explain your review decision."
+  params:
+    hotspotKey: The key of the Security Hotspot to update
+    comment: An optional comment explaining the review decision
+    resolution: The resolution when status is REVIEWED. Required if status is REVIEWED
+    status: The new status of the Security Hotspot
+- name: get_project_quality_gate_status
+  description: Get the Quality Gate Status for a project. Either 'analysisId', 'projectId' or 'projectKey' must be provided.
+  params:
+    projectKey: The optional project key to get the status for, for example 'my_project'
+    analysisId: The optional analysis ID to get the status for, for example 'AU-TpxcA-iU5OvuD2FL1'
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    projectId: The optional project ID to get the status for, for example 'AU-Tpxb--iU5OvuD2FLy'. Doesn't work with branches or pull requests.
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: show_rule
+  description: Shows detailed information about a SonarQube rule.
+  params:
+    organization: Organization key. Use only when SONARQUBE_ORG is unset; call list_organizations if ambiguous.
+    key: The rule key (e.g. javascript:EmptyBlock)
+- name: list_quality_gates
+  description: List all quality gates.
+  params:
+    organization: Organization key. Use only when SONARQUBE_ORG is unset; call list_organizations if ambiguous.
+- name: get_component_measures
+  description: Get SonarQube measures for a project, such as ncloc, complexity, violations, coverage, etc.
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    metricKeys: The metric keys to retrieve (e.g. ncloc, complexity, violations, coverage)
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: search_files_by_coverage
+  description: Search for files in a project sorted by coverage (ascending - worst coverage first). This tool helps identify files that need test coverage improvements.
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    pageIndex: 'Page index (1-based, default: 1)'
+    maxCoverage: Only return files with coverage below this threshold (0-100)
+    pageSize: 'Page size (default: 100, max: 500)'
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: get_file_coverage_details
+  description: Get complete line-by-line coverage information for a file, including which exact lines are uncovered and which have partially covered branches. This tool helps identify precisely where to add test coverage. Use after identifying files with low coverage via search_files_by_coverage.
+  params:
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    key: File key (e.g. my_project:src/foo/Bar.java)
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: search_metrics
+  description: Search for available metrics
+  params:
+    pageIndex: '1-based page index (default: 1)'
+    pageSize: 'Page size. Must be greater than 0 and less than or equal to 500 (default: 100)'
+- name: get_duplications
+  description: Get duplications for a file. Requires Browse permission on file's project
+  params:
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    key: File key (e.g. my_project:src/foo/Bar.php)
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: search_duplicated_files
+  description: Search for files with code duplications in a project. By default, automatically fetches all duplicated files across all pages (up to 10,000 files max).
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    pageIndex: 'Optional: Page number for manual pagination (starts at 1). If not specified, auto-fetches all duplicated files.'
+    pageSize: 'Optional: Number of results per page for manual pagination (max: 500). If not specified, auto-fetches all duplicated files.'
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: list_pull_requests
+  description: List all pull requests for a project. Use this tool to discover pull requests for PR-decorated analysis (coverage, issues, quality gate on new code). Returns the pull request key/ID and source branch for each PR, which can be used with other tools that accept a pullRequest parameter. For branch-based analysis without pull requests, use list_branches instead.
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+- name: list_branches
+  description: 'List analyzed branches for a SonarQube Cloud project (long-lived and short-lived). Use returned branch names as the branch parameter on other tools (e.g. get_project_quality_gate_status, get_component_measures). Check the type field: LONG for main/develop, SHORT for feature branches analyzed without pull requests. For pull request analysis, use list_pull_requests instead.'
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    branchTypes: Filter branches by type. ALL (default) returns all analyzed branches; LONG returns long-lived branches only; SHORT returns short-lived branches only.
+- name: search_dependency_risks
+  description: Search for software composition analysis issues (dependency risks) of a project, paired with releases that appear in the analyzed project, application, or portfolio.
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    pageIndex: An optional page index (1-based). Defaults to 1.
+    organization: Organization key. Use only when SONARQUBE_ORG is unset; call list_organizations if ambiguous.
+    pageSize: An optional page size. Must be greater than 0 and less than or equal to 500. Defaults to 100.
+    branch: Branch name for branch-based analysis. Discover names with list_branches. For pull request analysis, use pullRequest instead.
+    pullRequest: Pull request key/ID in SonarQube for PR-decorated analysis. Use list_pull_requests to discover valid keys. For branch-based analysis (long-lived or short-lived without PR), use branch instead. Must be the SonarQube PR key, not a git branch name.
+- name: start_agentic_readiness_assessment
+  description: Start an agentic readiness assessment for a project. Pass a branch to assess code changes you have pushed; omit it to assess the project's default branch. Returns immediately with status PENDING and an assessmentId — use get_agentic_readiness_assessment with that ID to poll for results.
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    branch: Branch to assess. Omit to use the project's default branch.
+- name: get_agentic_readiness_assessment
+  description: Retrieve the result of an agentic readiness assessment. Re-call with the same assessmentId until status is COMPLETED (or FAILED/INTERRUPTED). When COMPLETED, returns the overall readiness level and a per-pillar breakdown, each with recommended actions and supporting evidence.
+  params:
+    assessmentId: The assessment ID returned by start_agentic_readiness_assessment.
+- name: list_agentic_readiness_assessments
+  description: List all agentic readiness assessments for a project. Returns summaries ordered newest first; use get_agentic_readiness_assessment with an assessmentId from this list to retrieve full pillar-level results. pageIndex defaults to 1, pageSize defaults to 50 (max 100) when omitted.
+  params:
+    projectKey: The SonarQube project key (e.g. my_project). Use search_my_sonarqube_projects when the key is unknown.
+    pageIndex: '1-based page index (default: 1).'
+    pageSize: 'Number of items per page, max 100 (default: 50).'
+    branch: Filter assessments by branch name. Omit to list assessments for all branches.
