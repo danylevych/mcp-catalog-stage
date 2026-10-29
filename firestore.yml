@@ -1,0 +1,166 @@
+name: Firestore
+entryKey: firestore
+serverUserType: singleUser
+shortDescription: Read and manage Firebase Firestore documents, databases, indexes, and backups through Google's managed MCP server
+description: |
+  Connect to Google's managed Firestore MCP server to work with Firestore documents and collections, and to manage databases, composite indexes, and backups.
+
+  See Google's [official Firestore MCP documentation](https://docs.cloud.google.com/firestore/native/docs/use-firestore-mcp) for setup instructions, authentication requirements, and current capabilities.
+
+  ## What you'll need to connect
+
+  Ask your Google Cloud administrator to:
+
+  1. Select the Google Cloud project of your Firebase app and make sure billing is enabled and the [Cloud Firestore API](https://console.cloud.google.com/apis/enableflow?apiid=firestore.googleapis.com) is enabled. Enabling the API also enables the MCP server.
+  2. Grant your Google identity the [MCP Tool User](https://cloud.google.com/iam/docs/roles-permissions/mcp#mcp.toolUser) role, and [Firestore User](https://cloud.google.com/iam/docs/roles-permissions/datastore#datastore.user) or another role appropriate for the data you need to access. Managing databases, indexes, and backups needs broader Firestore roles.
+  3. Ensure your Obot administrator has configured a Google Web OAuth client for this catalog entry.
+
+  When you connect, Google asks you to authorize Obot. Tool calls use your Google identity and its IAM permissions.
+
+  See Google's [MCP authentication guide](https://cloud.google.com/mcp/authenticate-mcp) for complete authentication instructions.
+
+  ## Important considerations
+  - Only Firestore databases in **Native mode** are supported, in Standard or Enterprise edition. Datastore mode databases are not.
+  - Several tools change or delete data: documents, databases, indexes, backups, and backup schedules. Deletes cannot be undone.
+metadata:
+  categories: "Databases, Data & Analytics"
+icon: https://avatars.githubusercontent.com/u/1335026?v=4
+repoURL: https://docs.cloud.google.com/firestore/native/docs/use-firestore-mcp
+runtime: remote
+remoteConfig:
+  fixedURL: https://firestore.googleapis.com/mcp
+  staticOAuthRequired: true
+toolPreview:
+- name: get_document
+  description: Get a document from a Firestore database.
+  params:
+    mask: The fields to return. If not set, returns all fields. If the document has a field that is not present in this mask, that field will not be returned in the response.
+    name: 'Required. The resource name of the Document to get. In the format: `projects/{project_id}/databases/{database_id}/documents/{document_path}`.'
+    readTime: Reads the version of the document at the given time. This must be a microsecond precision timestamp within the past one hour, or if Point-in-Time Recovery is enabled, can additionally be a whole minute timestamp within the past 7 days.
+    requestOptions: Optional. The request options for this request.
+    transaction: Reads the document in a transaction.
+- name: add_document
+  description: Create a document from a Firestore database.
+  params:
+    collectionId: 'Required. The collection ID, relative to `parent`, to list. For example: `chatrooms`.'
+    document: Required. The document to create. `name` must not be set.
+    documentId: The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
+    mask: The fields to return. If not set, returns all fields. If the document has a field that is not present in this mask, that field will not be returned in the response.
+    parent: 'Required. The parent resource. For example: `projects/{project_id}/databases/{database_id}/documents` or `projects/{project_id}/databases/{database_id}/documents/chatrooms/{chatroom_id}`'
+    requestOptions: Optional. The request options for this request.
+- name: update_document
+  description: Update a document from a Firestore database.
+  params:
+    currentDocument: An optional precondition on the document. The request will fail if this is set and not met by the target document.
+    document: Required. The updated document. Creates the document if it does not already exist.
+    mask: The fields to return. If not set, returns all fields. If the document has a field that is not present in this mask, that field will not be returned in the response.
+    requestOptions: Optional. The request options for this request.
+    updateMask: The fields to update. None of the field paths in the mask may contain a reserved name. If the document exists on the server and has fields not referenced in the mask, they are left unchanged. Fields referenced in the mask, but not present in the input document, are deleted from the document on the server.
+- name: delete_document
+  description: Delete a document from a Firestore database.
+  params:
+    currentDocument: An optional precondition on the document. The request will fail if this is set and not met by the target document.
+    name: 'Required. The resource name of the Document to delete. In the format: `projects/{project_id}/databases/{database_id}/documents/{document_path}`.'
+    requestOptions: Optional. The request options for this request.
+- name: list_documents
+  description: List documents from a Firestore database.
+  params:
+    collectionId: 'Optional. The collection ID, relative to `parent`, to list. For example: `chatrooms` or `messages`. This is optional, and when not provided, Firestore will list documents from all collections under the provided `parent`.'
+    mask: Optional. The fields to return. If not set, returns all fields. If a document has a field that is not present in this mask, that field will not be returned in the response.
+    orderBy: 'Optional. The optional ordering of the documents to return. For example: `priority desc, __name__ desc`. This mirrors the `ORDER BY` used in Firestore queries but in a string representation. When absent, documents are ordered based on `__name__ ASC`.'
+    pageSize: Optional. The maximum number of documents to return in a single response. Firestore may return fewer than this value.
+    pageToken: Optional. A page token, received from a previous `ListDocuments` response. Provide this to retrieve the subsequent page. When paginating, all other parameters (with the exception of `page_size`) must match the values set in the request that generated the page token.
+    parent: 'Required. The parent resource name. In the format: `projects/{project_id}/databases/{database_id}/documents` or `projects/{project_id}/databases/{database_id}/documents/{document_path}`. For example: `projects/my-project/databases/my-database/documents` or `projects/my-project/databases/my-database/documents/chatrooms/my-chatroom`'
+    readTime: Perform the read at the provided time. This must be a microsecond precision timestamp within the past one hour, or if Point-in-Time Recovery is enabled, can additionally be a whole minute timestamp within the past 7 days.
+    recursive: Optional. If the list should recursively include all documents nested under the parent at any level. If the request specifies a `collection_id`, then the list will include all nested documents in the collection under the parent. This is optional, and when not provided, Firestore will only list documents nested immediately under the parent. Requests with `recursive` may not specify `show_missing`.
+    requestOptions: Optional. The request options for this request.
+    showMissing: If the list should show missing documents. A document is missing if it does not exist, but there are sub-documents nested underneath it. When true, such missing documents will be returned with a key but will not have fields, `create_time`, or `update_time` set. Requests with `show_missing` may not specify `where` or `order_by`.
+    transaction: Perform the read as part of an already active transaction.
+- name: list_collections
+  description: List all the collection IDs underneath a document.
+  params:
+    pageSize: The maximum number of results to return.
+    pageToken: A page token. Must be a value from ListCollectionIdsResponse.
+    parent: 'Required. The parent document. In the format: `projects/{project_id}/databases/{database_id}/documents/{document_path}`. For example: `projects/my-project/databases/my-database/documents/chatrooms/my-chatroom` Use `projects/{project_id}/databases/{database_id}/documents` to list top-level collections.'
+    readTime: Reads documents as they were at the given time. This must be a microsecond precision timestamp within the past one hour, or if Point-in-Time Recovery is enabled, can additionally be a whole minute timestamp within the past 7 days.
+    requestOptions: Optional. The request options for this request.
+- name: create_database
+  description: Create a Firestore database.
+  params:
+    database: Required. The Database to create.
+    databaseId: Required. The ID to use for the database, which will become the final component of the database's resource name. This value should be 4-63 characters. Valid characters are /a-z-/ with first character a letter and the last a letter or a number. Must not be UUID-like /[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/. "(default)" database ID is also valid if the database is Standard edition.
+    parent: Required. A parent name of the form `projects/{project_id}`
+- name: get_database
+  description: Get a Firestore database.
+  params:
+    name: Required. A name of the form `projects/{project_id}/databases/{database_id}`
+- name: list_databases
+  description: List Firestore databases.
+  params:
+    parent: Required. A parent name of the form `projects/{project_id}`
+    showDeleted: If true, also returns deleted resources.
+- name: update_database
+  description: Update a Firestore database.
+  params:
+    database: Required. The database to update.
+    updateMask: The list of fields to be updated.
+- name: delete_database
+  description: Delete a Firestore database.
+  params:
+    etag: The current etag of the Database. If an etag is provided and does not match the current etag of the database, deletion will be blocked and a FAILED_PRECONDITION error will be returned.
+    name: Required. A name of the form `projects/{project_id}/databases/{database_id}`
+- name: create_index
+  description: Create a composite index.
+  params:
+    index: Required. The composite index to create.
+    parent: Required. A parent name of the form `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}`
+- name: get_index
+  description: Get a Firestore index.
+  params:
+    name: Required. A name of the form `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{index_id}`
+- name: list_indexes
+  description: List Firestore indexes.
+  params:
+    filter: The filter to apply to list results.
+    pageSize: The number of results to return.
+    pageToken: A page token, returned from a previous call to FirestoreAdmin.ListIndexes, that may be used to get the next page of results.
+    parent: Required. A parent name of the form `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}`
+- name: delete_index
+  description: Delete a Firestore index.
+  params:
+    name: Required. A name of the form `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{index_id}`
+- name: get_backup
+  description: Get a Firestore backup.
+  params:
+    name: Required. Name of the backup to fetch. Format is `projects/{project}/locations/{location}/backups/{backup}`.
+- name: list_backups
+  description: List Firestore backups.
+  params:
+    filter: 'An expression that filters the list of returned backups. A filter expression consists of a field name, a comparison operator, and a value for filtering. The value must be a string, a number, or a boolean. The comparison operator must be one of: `<`, `>`, `<=`, `>=`, `!=`, `=`, or `:`. Colon `:` is the contains operator. Filter rules are not case sensitive. The following fields in the Backup are eligible for filtering: * `database_uid` (supports `=` only)'
+    parent: Required. The location to list backups from. Format is `projects/{project}/locations/{location}`. Use `{location} = '-'` to list backups from all locations for the given project. This allows listing backups from a single location or from all locations.
+- name: delete_backup
+  description: Delete a Firestore backup.
+  params:
+    name: Required. Name of the backup to delete. format is `projects/{project}/locations/{location}/backups/{backup}`.
+- name: create_backup_schedule
+  description: Create a Firestore backup schedule.
+  params:
+    backupSchedule: Required. The backup schedule to create.
+    parent: Required. The parent database. Format `projects/{project}/databases/{database}`
+- name: get_backup_schedule
+  description: Get a Firestore backup schedule.
+  params:
+    name: Required. The name of the backup schedule. Format `projects/{project}/databases/{database}/backupSchedules/{backup_schedule}`
+- name: list_backup_schedules
+  description: List Firestore backup schedules.
+  params:
+    parent: Required. The parent database. Format is `projects/{project}/databases/{database}`.
+- name: update_backup_schedule
+  description: Update a Firestore backup schedule.
+  params:
+    backupSchedule: Required. The backup schedule to update.
+    updateMask: The list of fields to be updated.
+- name: delete_backup_schedule
+  description: Delete a Firestore backup schedule.
+  params:
+    name: Required. The name of the backup schedule. Format `projects/{project}/databases/{database}/backupSchedules/{backup_schedule}`
