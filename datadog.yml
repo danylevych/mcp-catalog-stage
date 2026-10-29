@@ -5,8 +5,8 @@ shortDescription: Query Datadog observability data and manage platform features 
 upgradeNote: |
   This replaces the Obot-hosted Datadog server with Datadog's official hosted MCP server.
 
-  - **Reconnect required:** Connect with Datadog OAuth or a Personal or Service Access Token. The previous API key, application key, and site settings are no longer used.
-  - **Region:** This entry connects to Datadog EU1.
+  - **Reconnect required:** Connect with Datadog OAuth or a Personal or Service Access Token. The previous API key and application key are no longer used.
+  - **Site:** Enter your Datadog site again, for example `datadoghq.eu`.
   - **Tool changes:** Tool names, parameters, permissions, and available toolsets change.
 description: |
   Investigate logs, metrics, traces, monitors, dashboards, incidents, hosts, RUM, and more through [Datadog's vendor-hosted MCP server](https://docs.datadoghq.com/mcp_server/).
@@ -21,7 +21,7 @@ description: |
   ## What you'll need to connect
   - **Datadog account**: The MCP server is available on supported commercial Datadog sites. It is not supported for Datadog GovCloud.
   - **OAuth access**: Complete the Datadog OAuth flow when prompted. Your role requires `mcp_read` for read tools, `mcp_write` for write tools, and the underlying Datadog resource permissions. For non-interactive connections, optionally provide a Datadog Personal Access Token (PAT) or Service Access Token (SAT).
-  - **Regional endpoint**: This entry uses Datadog's EU1 endpoint. For another Datadog site, follow the [official setup guide](https://docs.datadoghq.com/mcp_server/setup/) to use that site's endpoint.
+  - **Datadog site**: The site your organization uses, as in its web address without `app.`: `datadoghq.eu` (EU1), `datadoghq.com` (US1), `us3.datadoghq.com`, `us5.datadoghq.com`, `ap1.datadoghq.com`, `ap2.datadoghq.com` or `uk1.datadoghq.com`. See [Datadog sites](https://docs.datadoghq.com/getting_started/site/).
 
   ## Important considerations
   - The default core toolset includes read tools and notebook create/edit tools. Enable additional toolsets only when needed to conserve context and limit the available actions.
@@ -32,8 +32,8 @@ description: |
   >
   > If you're upgrading this server, note that this replaces the Obot-hosted Datadog server with Datadog's official hosted MCP server.
   >
-  > - **Reconnect required:** Connect with Datadog OAuth or a Personal or Service Access Token. The previous API key, application key, and site settings are no longer used.
-  > - **Region:** This entry connects to Datadog EU1.
+  > - **Reconnect required:** Connect with Datadog OAuth or a Personal or Service Access Token. The previous API key and application key are no longer used.
+  > - **Site:** Enter your Datadog site again, for example `datadoghq.eu`.
   > - **Tool changes:** Tool names, parameters, permissions, and available toolsets change.
 
 metadata:
@@ -42,8 +42,14 @@ metadata:
 icon: https://avatars.githubusercontent.com/u/365230?s=200&v=4
 runtime: remote
 remoteConfig:
-  fixedURL: https://mcp.datadoghq.eu/v1/mcp
+  urlTemplate: https://mcp.${DD_SITE}/v1/mcp
 config:
+  - name: Datadog Site
+    description: "Your Datadog site without `app.`, for example `datadoghq.eu`, `datadoghq.com` or `us5.datadoghq.com`."
+    key: DD_SITE
+    required: true
+    sensitive: false
+    usage: env
   - name: Datadog Personal or Service Access Token
     description: Optional. Use a Datadog PAT or SAT when OAuth is unavailable.
     key: Authorization
