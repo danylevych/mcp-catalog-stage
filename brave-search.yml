@@ -1,0 +1,165 @@
+name: Brave Search
+entryKey: brave-search
+serverUserType: singleUser
+shortDescription: Search the web, news, images, videos, and places with the Brave Search API
+description: |
+  Search the web through the [Brave Search API](https://brave.com/search/api/) with Brave's own [MCP server](https://github.com/brave/brave-search-mcp-server).
+
+  ## Features
+  - **Web search**: Web results with freshness, country, and language filters
+  - **News, image, and video search**: Recent articles, pictures, and videos on a topic
+  - **LLM context**: Pre-extracted page content for grounding answers, instead of plain links
+  - **Local and place search**: Businesses and points of interest with addresses, ratings, and hours
+  - **Summarizer**: AI summaries of web search results with inline references
+
+  ## What you'll need to connect
+
+  **Required:**
+  - **Brave Search API key**: Create one in the [Brave Search API dashboard](https://api-dashboard.search.brave.com/). Every request counts against that key's plan.
+
+  ## Important considerations
+  - Local search, extra snippets, and the summarizer need a paid plan; on a plan without them, those tools return an error or fall back to web search.
+  - Search queries are sent to Brave. Don't search for confidential information.
+metadata:
+  categories: Retrieval & Search
+icon: https://brave.com/static-assets/images/brave-logo-sans-text.svg
+repoURL: https://github.com/brave/brave-search-mcp-server
+runtime: npx
+npxConfig:
+  package: "@brave/brave-search-mcp-server@2.1.4"
+  egressDomains:
+    - api.search.brave.com
+config:
+  - key: BRAVE_API_KEY
+    name: Brave Search API Key
+    required: true
+    sensitive: true
+    description: Your Brave Search API key, from https://api-dashboard.search.brave.com/
+    usage: env
+toolPreview:
+- name: brave_web_search
+  description: "Performs web searches using the Brave Search API and returns comprehensive search results with rich metadata.\n\n    When to use:\n        - General web searches for information, facts, or current topics\n        - Location-based queries (restaurants, businesses, points of interest)\n        - News searches for recent events or breaking stories\n        - Finding videos, discussions, or FAQ content\n        - Research requiring diverse result types (web pages, images, reviews, etc.)\n\n    Returns a JSON list of web results with title, description, and URL.\n    \n    When the \"results_filter\" parameter is empty, JSON results may also contain FAQ, Discussions, News, and Video results."
+  params:
+    query: Search query (max 400 chars, 50 words)
+    country: Search query country, where the results come from. The country string is limited to 2 character country codes of supported countries.
+    search_lang: Search language preference. The 2 or more character language code for which the search results are provided.
+    ui_lang: The language of the UI. The 2 or more character language code for which the search results are provided.
+    count: Number of results (1-20, default 10). Applies only to web search results (i.e., has no effect on locations, news, videos, etc.)
+    offset: Pagination offset (max 9, default 0)
+    safesearch: 'Filters search results for adult content. The following values are supported: ''off'' - No filtering. ''moderate'' - Filters explicit content (e.g., images and videos), but allows adult domains in search results. ''strict'' - Drops all adult content from search results. The default value is ''moderate''.'
+    freshness: 'Filters search results by when they were discovered. The following values are supported: ''pd'' - Discovered within the last 24 hours. ''pw'' - Discovered within the last 7 days. ''pm'' - Discovered within the last 31 days. ''py'' - Discovered within the last 365 days. ''YYYY-MM-DDtoYYYY-MM-DD'' - Timeframe is also supported by specifying the date range e.g. 2022-04-01to2022-07-30.'
+    text_decorations: Whether display strings (e.g. result snippets) should include decoration markers (e.g. highlighting characters).
+    spellcheck: Whether to spellcheck the provided query.
+    result_filter: Result filter (default ['web', 'query'])
+    goggles: Goggles act as a custom re-ranking on top of Brave's search index. The parameter supports both a url where the Goggle is hosted or the definition of the Goggle. Multiple goggle URLs and/or definitions can be provided in an array. For more details, refer to the Goggles repository (i.e., https://github.com/brave/goggles-quickstart).
+    units: The measurement units. If not provided, units are derived from search country.
+    extra_snippets: A snippet is an excerpt from a page you get as a result of the query, and extra_snippets allow you to get up to 5 additional, alternative excerpts. Only available under Free AI, Base AI, Pro AI, Base Data, Pro Data and Custom plans.
+    summary: This parameter enables summary key generation in web search results. This is required for summarizer to be enabled.
+- name: brave_local_search
+  description: "Brave Local Search API provides enrichments for location search results. Access to this API is available only through the Brave Search API Pro plans; confirm the user's plan before using this tool (if the user does not have a Pro plan, use the brave_web_search tool). Searches for local businesses and places using Brave's Local Search API. Best for queries related to physical locations, businesses, restaurants, services, etc.\n    \n    Returns detailed information including:\n        - Business names and addresses\n        - Ratings and review counts\n        - Phone numbers and opening hours\n\n    Use this when the query implies 'near me', 'in my area', or mentions specific locations (e.g., 'in San Francisco'). This tool automatically falls back to brave_web_search if no local results are found."
+  params:
+    query: Search query (max 400 chars, 50 words)
+    country: Search query country, where the results come from. The country string is limited to 2 character country codes of supported countries.
+    search_lang: Search language preference. The 2 or more character language code for which the search results are provided.
+    ui_lang: The language of the UI. The 2 or more character language code for which the search results are provided.
+    count: Number of results (1-20, default 10). Applies only to web search results (i.e., has no effect on locations, news, videos, etc.)
+    offset: Pagination offset (max 9, default 0)
+    safesearch: 'Filters search results for adult content. The following values are supported: ''off'' - No filtering. ''moderate'' - Filters explicit content (e.g., images and videos), but allows adult domains in search results. ''strict'' - Drops all adult content from search results. The default value is ''moderate''.'
+    freshness: 'Filters search results by when they were discovered. The following values are supported: ''pd'' - Discovered within the last 24 hours. ''pw'' - Discovered within the last 7 days. ''pm'' - Discovered within the last 31 days. ''py'' - Discovered within the last 365 days. ''YYYY-MM-DDtoYYYY-MM-DD'' - Timeframe is also supported by specifying the date range e.g. 2022-04-01to2022-07-30.'
+    text_decorations: Whether display strings (e.g. result snippets) should include decoration markers (e.g. highlighting characters).
+    spellcheck: Whether to spellcheck the provided query.
+    result_filter: Result filter (default ['web', 'query'])
+    goggles: Goggles act as a custom re-ranking on top of Brave's search index. The parameter supports both a url where the Goggle is hosted or the definition of the Goggle. Multiple goggle URLs and/or definitions can be provided in an array. For more details, refer to the Goggles repository (i.e., https://github.com/brave/goggles-quickstart).
+    units: The measurement units. If not provided, units are derived from search country.
+    extra_snippets: A snippet is an excerpt from a page you get as a result of the query, and extra_snippets allow you to get up to 5 additional, alternative excerpts. Only available under Free AI, Base AI, Pro AI, Base Data, Pro Data and Custom plans.
+    summary: This parameter enables summary key generation in web search results. This is required for summarizer to be enabled.
+- name: brave_video_search
+  description: "Searches for videos using Brave's Video Search API and returns structured video results with metadata.\n\n    When to use:\n        - When you need to find videos related to a specific topic, keyword, or query.\n        - Useful for discovering video content, getting video metadata, or finding videos from specific creators/publishers.\n\n    Returns a JSON list of video-related results with title, url, description, duration, and thumbnail_url."
+  params:
+    query: The user's search query. Query cannot be empty. Limited to 400 characters and 50 words.
+    country: Search query country, where the results come from. The country string is limited to 2 character country codes of supported countries.
+    search_lang: Search language preference. The 2 or more character language code for which the search results are provided.
+    ui_lang: User interface language preferred in response. Usually of the format <language_code>-<country_code>. For more, see RFC 9110.
+    count: Number of results (1-50, default 20). Combine this parameter with `offset` to paginate search results.
+    offset: Pagination offset (max 9, default 0). Combine this parameter with `count` to paginate search results.
+    spellcheck: Whether to spellcheck provided query.
+    safesearch: 'Filters search results for adult content. The following values are supported: ''off'' - No filtering. ''moderate'' - Filter out explicit content. ''strict'' - Filter out explicit and suggestive content. The default value is ''moderate''.'
+    freshness: 'Filters search results by when they were discovered. The following values are supported: ''pd'' - Discovered within the last 24 hours. ''pw'' - Discovered within the last 7 days. ''pm'' - Discovered within the last 31 days. ''py'' - Discovered within the last 365 days. ''YYYY-MM-DDtoYYYY-MM-DD'' - timeframe is also supported by specifying the date range (e.g. ''2022-04-01to2022-07-30'').'
+- name: brave_image_search
+  description: Performs an image search using the Brave Search API. Helpful for when you need pictures of people, places, things, graphic design ideas, art inspiration, and more. When relaying results in a markdown environment, it may be helpful to include images in the results (e.g., ![image.title](image.properties.url)).
+  params:
+    query: The user's search query. Query cannot be empty. Limited to 400 characters and 50 words.
+    country: Search query country, where the results come from. The country string is limited to 2 character country codes of supported countries.
+    search_lang: Search language preference. The 2 or more character language code for which the search results are provided.
+    count: Number of results (1-200, default 50). Image Search is not paginated — raise `count` if you need more results. There is no `offset` parameter.
+    safesearch: 'Filters search results for adult content. The following values are supported: ''off'' - No filtering. ''strict'' - Drops all adult content from search results.'
+    spellcheck: Whether to spellcheck provided query.
+- name: brave_news_search
+  description: "This tool searches for news articles using Brave's News Search API based on the user's query. Use it when you need current news information, breaking news updates, or articles about specific topics, events, or entities.\n    \n    When to use:\n        - Finding recent news articles on specific topics\n        - Getting breaking news updates\n        - Researching current events or trending stories\n        - Gathering news sources and headlines for analysis\n\n    Returns a JSON list of news-related results with title, url, and description. Some results may contain snippets of text from the article.\n    \n    When relaying results in markdown-supporting environments, always cite sources with hyperlinks.\n    \n    Examples:\n        - \"According to [Reuters](https://www.reuters.com/technology/china-bans/), China bans uncertified and recalled power banks on planes\".\n        - \"The [New York Times](https://www.nytimes.com/2025/06/27/us/technology/ev-sales.html) reports that Tesla's EV sales have increased by 20%\".\n        - \"According to [BBC News](https://www.bbc.com/news/world-europe-65910000), the UK government has announced a new policy to support renewable energy\"."
+  params:
+    query: Search query (max 400 chars, 50 words)
+    country: Search query country, where the results come from. The country string is limited to 2 character country codes of supported countries.
+    search_lang: Search language preference. The 2 or more character language code for which the search results are provided.
+    ui_lang: User interface language preferred in response. Usually of the format <language_code>-<country_code>. For more, see RFC 9110.
+    count: Number of results (1-50, default 20)
+    offset: Pagination offset (max 9, default 0)
+    spellcheck: Whether to spellcheck provided query.
+    safesearch: 'Filters search results for adult content. The following values are supported: ''off'' - No filtering. ''moderate'' - Filter out explicit content. ''strict'' - Filter out explicit and suggestive content. The default value is ''moderate''.'
+    freshness: 'Filters search results by when they were discovered. The following values are supported: ''pd'' - Discovered within the last 24 hours. ''pw'' - Discovered within the last 7 Days. ''pm'' - Discovered within the last 31 Days. ''py'' - Discovered within the last 365 Days. ''YYYY-MM-DDtoYYYY-MM-DD'' - Timeframe is also supported by specifying the date range e.g. 2022-04-01to2022-07-30.'
+    extra_snippets: A snippet is an excerpt from a page you get as a result of the query, and extra_snippets allow you to get up to 5 additional, alternative excerpts. Only available under Free AI, Base AI, Pro AI, Base Data, Pro Data and Custom plans.
+    goggles: Goggles act as a custom re-ranking on top of Brave's search index. The parameter supports both a url where the Goggle is hosted or the definition of the Goggle. Multiple goggle URLs and/or definitions can be provided in an array. For more details, refer to the Goggles repository (i.e., https://github.com/brave/goggles-quickstart).
+- name: brave_summarizer
+  description: "Retrieves AI-generated summaries of web search results using Brave's Summarizer API. This tool processes search results to create concise, coherent summaries of information gathered from multiple sources.\n\n    When to use:\n\n    - When you need a concise overview of complex topics from multiple sources\n    - For quick fact-checking or getting key points without reading full articles\n    - When providing users with summarized information that synthesizes various perspectives\n    - For research tasks requiring distilled information from web searches\n\n    Returns a text summary that consolidates information from the search results. Optional features include inline references to source URLs and additional entity information.\n\n    Requirements: Must first perform a web search using brave_web_search with summary=true parameter. Requires a Pro AI subscription to access the summarizer functionality."
+  params:
+    key: The key is equal to value of field key as part of the Summarizer response model.
+    entity_info: Returns extra entities info with the summary response.
+    inline_references: Adds inline references to the summary response.
+- name: brave_llm_context
+  description: "Retrieves pre-extracted, relevance-ranked web content using Brave's LLM Context API, optimized for AI agents, LLM grounding, and RAG pipelines. Unlike a traditional web search that returns links and short descriptions, this tool returns the actual substance of matching pages — text chunks, tables, code blocks, and structured data — so the model can reason over it directly.\n\n    When to use:\n        - Grounding answers in fresh, relevant web content (RAG)\n        - Giving an AI agent ready-to-use page content from a single search call\n        - Question answering and fact-checking against current sources\n        - Gathering source material for research without manually fetching pages\n        - When you need the contents of pages, not just titles, descriptions, and URLs\n\n    When relaying results in markdown-supporting environments, cite the source URLs from the \"sources\" map."
+  params:
+    query: The user's search query term. Query can not be empty. Maximum of 400 characters and 50 words in the query.
+    country: The search query country, where the results come from. The country string is limited to 2 character country codes of supported countries.
+    search_lang: The search language preference. The 2 or more character language code for which the search results are provided.
+    count: The maximum number of search results considered to select the LLM context data. The default is 20 and the maximum is 50.
+    spellcheck: Whether to enable spellcheck on the query.
+    maximum_number_of_urls: Maximum number of different URLs to include in LLM context.
+    maximum_number_of_tokens: Approximate maximum number of tokens to include in context. The default is 8192 and maximum is 32768.
+    maximum_number_of_snippets: Maximum number of different snippets (or chunks of text) to include in LLM context. The default is 50 and maximum is 256.
+    context_threshold_mode: The mode to use to determine the threshold for including content in context. Default is balanced.
+    maximum_number_of_tokens_per_url: Maximum number of tokens to include per URL. The default is 4096 and maximum is 8192.
+    maximum_number_of_snippets_per_url: Maximum number of snippets to include per URL. The default is 50 and maximum is 100.
+    goggles: Goggles act as a custom re-ranking on top of Brave's search index. The parameter supports both a url where the Goggle is hosted or the definition of the Goggle. Multiple goggle URLs and/or definitions can be provided in an array. For more details, refer to the Goggles repository (i.e., https://github.com/brave/goggles-quickstart).
+    freshness: 'Filters search results by when they were discovered. The following values are supported: ''pd'' - Discovered within the last 24 hours. ''pw'' - Discovered within the last 7 days. ''pm'' - Discovered within the last 31 days. ''py'' - Discovered within the last 365 days. ''YYYY-MM-DDtoYYYY-MM-DD'' - Timeframe is also supported by specifying the date range e.g. 2022-04-01to2022-07-30.'
+    enable_local: Whether to enable local recall. Not setting this value means auto-detect and uses local recall if any of the localization headers are provided.
+    enable_source_metadata: Enable source metadata enrichment (site_name, favicon) in the sources attribute of the response.
+    x-loc-lat: The latitude of the client's geographical location in degrees, to provide relevant local results. The latitude must be greater than or equal to -90.0 degrees and less than or equal to +90.0 degrees.
+    x-loc-long: The longitude of the client's geographical location in degrees, to provide relevant local results. The longitude must be greater than or equal to -180.0 and less than or equal to +180.0 degrees.
+    x-loc-city: The generic name of the client city
+    x-loc-state: A code which could be up to three characters, that represent the client's state/region. The region is the first-level subdivision (the broadest or least specific) of the ISO 3166-2 code.
+    x-loc-state-name: The name of the client’s state/region. The region is the first-level subdivision (the broadest or least specific) of the ISO 3166-2 code.
+    x-loc-country: The two letter country code for the client’s country. For a list of country codes, see ISO 3166-1 alpha-2
+    x-loc-postal-code: The client’s postal code
+    api-version: The API version to use. This is denoted by the format YYYY-MM-DD. Default is the latest that is available. Read more about API versioning at https://api-dashboard.search.brave.com/documentation/guides/versioning.
+    accept: The default supported media type is application/json.
+    cache-control: Brave Search will return cached content by default. To prevent caching set the Cache-Control header to no-cache. This is currently done as best effort.
+    user-agent: The user agent originating the request. Brave search can utilize the user agent to provide a different experience depending on the device as described by the string. The user agent should follow the commonly used browser agent strings on each platform. For more information on curating user agents, see RFC 9110.
+- name: brave_place_search
+  description: "Searches Brave's Place Search API. A single call may populate any combination of 'results' (POIs), 'cities', 'addresses', 'streets', and 'location' (the resolved search area), depending on the query's shape.\n\n    When to use:\n        - POIs near coordinates or a named area (e.g. \"coffee shops in Paris\") -> 'results', each with structured business data (postal address, hours, contact, ratings, photos, categories, timezone).\n        - Browsing general POIs (omit 'query'; supply 'latitude'+'longitude' or 'location').\n        - Disambiguating a bare city name (e.g. \"springfield\") -> 'cities'.\n        - Resolving a specific address (e.g. \"350 5th avenue\" with NYC coords) -> 'addresses' (often plus 'streets').\n        - Looking up a street by name (e.g. \"michigan avenue\" with Chicago coords) -> 'streets'.\n\n    Inputs:\n        - Anchor the search via 'latitude'+'longitude' or 'location' (or both). With neither, 'query' is required.\n        - 'addresses' / 'streets' only surface when the query is address-/street-shaped AND geographically anchored.\n        - 'location' format: US -- '<city> <state> <country>' (e.g. 'san francisco ca united states'); non-US -- '<city> <country>' (e.g. 'tokyo japan'). Capitalization and commas don't matter.\n        - 'count' caps results (max 50, default 20). 'radius' (meters) biases toward closer results; it does NOT hard-limit the search area."
+  params:
+    query: 'Query string. Shape influences the response: POI-like queries -> `results`; bare/ambiguous city names -> `cities`; address- or street-shaped queries with a geographic anchor -> `addresses` and/or `streets`. If omitted, returns general POIs in the supplied area.'
+    radius: Bias toward results closer to the supplied coordinates, in meters. NOT a hard cutoff -- the API may still return more distant results. If omitted, the search is performed globally.
+    count: Number of results to return. Maximum is 50. Default is 20.
+    latitude: Latitude of the geographical coordinates around which to search, in degrees (-90 to 90). Typically paired with `longitude`.
+    longitude: Longitude of the geographical coordinates around which to search, in degrees (-180 to 180). Typically paired with `latitude`.
+    location: Location string to search around, used as an alternative to `latitude` and `longitude`. For US locations prefer the form '<city> <state> <country name>' (e.g. 'san francisco ca united states'); for non-US locations use '<city> <country name>' (e.g. 'tokyo japan'). No commas or special characters needed; capitalization does not matter.
+    country: Two-letter country code (ISO 3166-1 alpha-2) used to scope the search. Defaults to 'US'.
+    search_lang: Language for the search results. Defaults to 'en'.
+    ui_lang: User interface language for the response, usually of the form '<language>-<region>'. Defaults to 'en-US'.
+    units: Units of measurement for distance values. Defaults to 'metric'.
+    safesearch: Safe search level for the query results. 'off' - No filtering. 'moderate' - Filter out explicit content. 'strict' - Filter out explicit and suggestive content. Defaults to 'strict'.
+    spellcheck: Whether to apply spellcheck before executing the search. Defaults to true.
+    geoloc: Optional geolocation token used to refine results.
+    api-version: The API version to use. This is denoted by the format YYYY-MM-DD. Default is the latest that is available. Read more about API versioning at https://api-dashboard.search.brave.com/documentation/guides/versioning.
+    accept: The default supported media type is application/json.
+    cache-control: Brave Search will return cached content by default. To prevent caching set the Cache-Control header to no-cache. This is currently done as best effort.
+    user-agent: The user agent originating the request. Brave Search can utilize the user agent to provide a different experience depending on the device as described by the string. The user agent should follow the commonly used browser agent strings on each platform. For more information on curating user agents, see RFC 9110.

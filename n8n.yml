@@ -1,0 +1,407 @@
+name: n8n
+entryKey: n8n
+serverUserType: singleUser
+shortDescription: Find, run, and build n8n workflows, agents, and data tables through your n8n instance's built-in MCP server
+description: |
+  Work with your n8n instance through its [built-in MCP server](https://docs.n8n.io/connect/connect-to-n8n-mcp-server.md): find and run workflows, check their executions, and build workflows, agents, and data tables.
+
+  See n8n's [MCP server documentation](https://docs.n8n.io/connect/connect-to-n8n-mcp-server.md) and the [tools reference](https://docs.n8n.io/connect/connect-to-n8n-mcp-server/mcp-server-tools-reference.md) for setup instructions and current capabilities.
+
+  ## Features
+  - **Workflows**: Search workflows, read their details and history, run them, and publish or unpublish them
+  - **Executions**: Look up workflow executions and their results
+  - **Workflow builder**: Create and update workflows from code, validate them, and look up nodes
+  - **Agents**: Create, test, and publish n8n agents (preview)
+  - **Data tables**: Create data tables, change their columns, and add rows
+
+  ## What you'll need to connect
+  - An n8n instance (Cloud or self-hosted) that this server can reach over the internet. An owner or admin turns on **Settings > Instance-level MCP > Enable MCP access**.
+  - **MCP Server URL**: copy the **Server URL** from **Settings > Instance-level MCP > Connect a client**. It ends in `/mcp-server/http`, for example `https://example.app.n8n.cloud/mcp-server/http`. It is not the address of the n8n editor.
+  - Sign in with OAuth when prompted. Instead, you can paste an n8n MCP access token, generated in the same dialog; generating a new token revokes the previous one.
+
+  Tool calls use your n8n user and its permissions.
+
+  ## Important considerations
+  - Only workflows with **Available in MCP** turned on can be run. Searching lists every workflow you can view.
+  - Every connected client sees the same MCP-enabled workflows; access cannot be limited per client.
+  - Several tools change data: they publish, archive, and update workflows and agents, and change data tables.
+metadata:
+  categories: Automation & Browsers, Developer Tools
+icon: https://avatars.githubusercontent.com/u/45487711?v=4
+repoURL: https://docs.n8n.io/connect/connect-to-n8n-mcp-server.md
+runtime: remote
+remoteConfig:
+  urlTemplate: ${N8N_MCP_URL}
+config:
+  - name: MCP Server URL
+    description: The Server URL from n8n's Settings > Instance-level MCP > Connect a client, ending in /mcp-server/http.
+    key: N8N_MCP_URL
+    required: true
+    sensitive: false
+    usage: env
+  - name: n8n MCP Access Token
+    description: Optional. Use an n8n MCP access token instead of signing in with OAuth.
+    key: Authorization
+    required: false
+    sensitive: true
+    prefix: "Bearer "
+    usage: header
+toolPreview:
+- name: search_workflows
+  description: 'Search for workflows with optional filters. Returns a preview of each workflow. Where workflows are organised into folders, narrow the search with folderId instead of scanning everything: reuse a parentFolderId from an earlier result, or resolve a folder name with search_folders when that tool is available.'
+  params:
+    limit: Limit the number of results (max 200)
+    query: Filter by name or description
+    projectId: ''
+    tags: Filter by tag names (AND semantics — workflow must have all).
+    sortBy: 'Sort order for results (default: updatedAt:desc). Use updatedAt:desc to find the most recently edited workflows first.'
+    folderId: Filter by folder. Pass a parentFolderId from an earlier result to find a workflow's siblings, or — when search_folders is available — use it to resolve a folder name to an id first. Pass "0" for workflows that sit at the project root rather than in a folder.
+    includeSubfolders: 'Whether a folderId search also covers that folder''s subfolders (default: true). Set false to match only workflows directly inside the folder. Ignored when folderId is "0", which always matches the project root only.'
+- name: execute_workflow
+  description: Execute a workflow by ID. Returns the execution ID immediately without waiting for completion. Before executing always ensure you know the input schema by first using the get_workflow_details tool and consulting workflow description; pass detailLevel 'execution' to that tool when running the workflow is all you need, since the full graph is not required here.
+  params:
+    workflowId: The ID of the workflow to execute
+    executionMode: Required execution intent. Use "manual" for testing or validating the current workflow, including tests against live external services. Use "production" only when intentionally running the published workflow as a live execution.
+    triggerNodeName: Name of the trigger node to execute. Required when providing inputs. If omitted, the workflow must have exactly one trigger that does not require inputs (Schedule Trigger, or Manual Trigger in manual mode). Use get_workflow_details to see available trigger names.
+    inputs: Trigger payload. Required for webhook, chat, and form triggers. Must be omitted for schedule and manual triggers. Use get_workflow_details to see the expected payload for each trigger.
+- name: get_workflow_execution
+  description: Get workflow execution details by execution ID and workflow ID. By default returns metadata only. Set includeData to true to include node execution data, optionally filtered by nodeNames and truncated by truncateData.
+  params:
+    workflowId: The ID of the workflow the execution belongs to
+    executionId: The ID of the execution to retrieve
+    includeData: Whether to include the full execution result data. Defaults to false (metadata only). Set to true to include node inputs/outputs. Use `false` to quickly check execution status
+    nodeNames: When includeData is true, return data only for these node names. If omitted, data for all nodes is included.
+    truncateData: When includeData is true, limit the number of data items returned per node output to this value. If omitted, all items are returned.
+- name: search_workflow_executions
+  description: Search for workflow executions with optional filters. Returns execution metadata including status, timing, and workflow ID.
+  params:
+    workflowId: Filter executions by workflow ID
+    status: Filter by execution status(es)
+    startedAfter: ISO 8601 timestamp — only return executions that started after this time
+    startedBefore: ISO 8601 timestamp — only return executions that started before this time
+    limit: Limit the number of results (max 200)
+    cursor: Cursor for pagination — pass the `nextCursor` from the previous page. Treat it as opaque
+- name: get_workflow_details
+  description: Get detailed information about a specific workflow including trigger details
+  params:
+    workflowId: The ID of the workflow to retrieve
+    detailLevel: Level of detail to return. 'full' (default) includes the complete workflow payload. 'execution' returns only the workflow metadata and trigger information needed to run it — prefer it when the goal is just to execute the workflow via execute_workflow.
+- name: get_workflow_history
+  description: List the saved version history of a workflow (newest first), so you can inspect how it changed over time and pick a version to retrieve or restore.
+  params:
+    workflowId: The ID of the workflow to read version history for
+    limit: Limit the number of results (max 50)
+    offset: Number of versions to skip for pagination (default 0)
+- name: get_workflow_version
+  description: Retrieve the full content (nodes, connections, node groups) of a specific workflow version from its history. Use the versionId from get_workflow_history.
+  params:
+    workflowId: The ID of the workflow the version belongs to
+    versionId: The version ID to retrieve, as returned by get_workflow_history
+- name: get_workflow_versions_diff
+  description: 'Compare two saved versions of a workflow and return what changed between them: nodes added (with their full content), removed, or modified (with a field-level delta per modified node) and connections added or removed. Pass the older version as fromVersionId and the newer one as toVersionId, using version IDs from get_workflow_history.'
+  params:
+    workflowId: The ID of the workflow the versions belong to
+    fromVersionId: The base (older) version ID, as returned by get_workflow_history
+    toVersionId: The target (newer) version ID, as returned by get_workflow_history
+- name: publish_workflow
+  description: Publish (activate) a workflow to make it available for production execution. This creates an active version from the current draft.
+  params:
+    workflowId: The ID of the workflow to publish
+    versionId: Optional version ID to publish. If not provided, publishes the current draft version.
+- name: unpublish_workflow
+  description: Unpublish (deactivate) a workflow to stop it from being available for production execution.
+  params:
+    workflowId: The ID of the workflow to unpublish
+- name: prepare_workflow_pin_data
+  description: Prepare test pin data for a workflow. Trigger nodes, nodes with credentials, and HTTP Request nodes need pin data. Logic nodes (Set, If, Code, etc.) and credential-free I/O nodes (Execute Command, file read/write) execute normally without pin data. Returns JSON Schemas describing the expected output shape for each node that needs pin data — schemas are derived from past execution output shapes or node type definitions. No actual user data is returned. You should generate realistic sample data for the schemas, use empty defaults for nodes without schema, merge everything into a single pinData object, and pass it to test_workflow.
+  params:
+    workflowId: The ID of the workflow to generate test pin data for
+- name: test_workflow
+  description: Test a workflow using pin data to bypass external services. Trigger nodes, nodes with credentials, and HTTP Request nodes are pinned (use simulated data). Other nodes (Set, If, Code, etc.) execute normally — including credential-free I/O nodes like Execute Command or file read/write nodes. Use prepare_workflow_pin_data to generate the pin data first.
+  params:
+    workflowId: The ID of the workflow to test
+    pinData: 'Pin data for all workflow nodes. Use the prepare_workflow_pin_data tool to generate this. Keys are node names, values are arrays of items. Each item MUST be wrapped in a "json" property, e.g. [{"json": {"id": "123", "name": "test"}}]. Do NOT pass flat objects like [{"id": "123"}].'
+    triggerNodeName: Optional name of the trigger node to start execution from. Useful for workflows with multiple triggers. Defaults to the first trigger node found.
+    timeout: Optional timeout in seconds before the test execution is interrupted. Defaults to 300 seconds. Increase this to test workflows that take longer to run.
+- name: list_credentials
+  description: List credentials the current user can access. Use this to find a credential ID before referencing it anywhere one is required. Prefer reusing a credential already used by another node in the workflow (get_workflow_details with detailLevel 'full' shows the credentials on each node). Never returns credential secret data.
+  params:
+    limit: Limit the number of results (max 200)
+    query: Filter credentials by name (partial match)
+    type: Filter by credential type (e.g. "slackApi", "httpHeaderAuth"). Partial match.
+    projectId: Restrict results to credentials belonging to this project
+    onlySharedWithMe: Only return credentials shared directly with the current user
+- name: list_n8n_gateway_services
+  description: 'List Gateway credits coverage: node and credential types the platform can provide managed credentials for, plus supported resource+operation combinations, minimum type versions, and hidden node properties. Use this to decide which nodes let the user skip credential setup.'
+- name: list_workflow_tags
+  description: List all workflow tags in the instance.
+  params:
+    limit: Limit the number of results (max 500)
+- name: search_data_tables
+  description: Search for data tables accessible to the current user. Use this to find a data table ID before modifying or adding data to it.
+  params:
+    query: Filter data tables by name (case-insensitive partial match)
+    projectId: Filter by project ID
+    limit: Limit the number of results (max 100)
+- name: create_data_table
+  description: Create a new data table with the specified columns. Use search_projects to find a project ID first.
+  params:
+    projectId: The project ID where the data table will be created
+    name: The name of the data table (must be unique within the project)
+    columns: The columns to create in the data table. At least one column is required.
+- name: rename_data_table
+  description: Rename an existing data table.
+  params:
+    dataTableId: The ID of the data table to rename
+    projectId: The project ID the data table belongs to
+    name: The new name for the data table
+- name: add_data_table_column
+  description: Add a new column to an existing data table.
+  params:
+    dataTableId: The ID of the data table to add a column to
+    projectId: The project ID the data table belongs to
+    name: Column name. Must start with a letter, contain only letters, numbers, and underscores (max 63 chars)
+    type: The data type of the new column
+- name: delete_data_table_column
+  description: Delete a column from a data table. This permanently removes the column and all its data.
+  params:
+    dataTableId: The ID of the data table containing the column
+    projectId: The project ID the data table belongs to
+    columnId: The ID of the column to delete
+- name: rename_data_table_column
+  description: Rename a column in a data table.
+  params:
+    dataTableId: The ID of the data table containing the column
+    projectId: The project ID the data table belongs to
+    columnId: The ID of the column to rename
+    name: The new column name
+- name: add_data_table_rows
+  description: Insert rows into an existing data table. Each row is an object mapping column names to values. Use search_data_tables to find the data table ID first.
+  params:
+    dataTableId: The ID of the data table to insert rows into
+    projectId: The project ID the data table belongs to
+    rows: Array of row objects to insert. Each object maps column names to values. Maximum 1000 rows per call.
+- name: get_data_table_rows
+  description: Read rows from a data table, with optional filtering, sorting and pagination. Use search_data_tables to find the data table ID and its columns first.
+  params:
+    dataTableId: The ID of the data table to read rows from
+    projectId: The project ID the data table belongs to
+    filter: Filter conditions to select rows. Omit to return all rows
+    sortBy: Sort order as '<columnName>:<asc|desc>', e.g. 'createdAt:desc'
+    limit: Limit the number of results (max 100)
+    skip: Number of rows to skip, for paginating through large result sets
+- name: get_user_preferences
+  description: 'Returns the preferences saved for this n8n instance, the caller, and their projects: node and credential choices, naming, how work is organised, and patterns to avoid.
+
+
+    Call this before you create or modify anything in n8n — a workflow, an Agent, a data table, a folder — and apply what it returns to every change you make for the remainder of the task, not only the first one. If a preference conflicts with something the user asks for directly, follow the user and say which preference you set aside.
+
+
+    When you work inside one project, pass its `projectId` to leave the other projects out.'
+  params:
+    projectId: Read one project instead of every project you can see. The instance and personal preferences are always included. Obtain the id from search_projects.
+- name: save_user_preference
+  description: 'Saves a preference about how the user likes to work with n8n, so the n8n assistant and every connected AI tool apply it from now on: node and credential choices, naming, how work is organised, patterns to avoid.
+
+
+    Call this only for a durable preference the user states about their way of working, such as "always add an error workflow" or "name nodes in English". Do not call it for an instruction that applies to the current task only, such as "make this one a POST request", and do not infer a preference the user did not state.
+
+
+    Read get_user_preferences first. If a saved preference already covers the same ground, call update_user_preference with its id instead of saving a near-duplicate; saving the exact same text again is refused.
+
+
+    The preference is saved at once, without a confirmation step. In the same turn, tell the user the exact text that was saved and give them the settings link from the result, so they can check it. If they want it changed, call update_user_preference; if they want it gone, call undo_user_preference.'
+  params:
+    content: One instruction, written as the user would say it. At most 2000 characters. A scope that already holds 50 preferences refuses a new one, so edit or delete one first.
+- name: update_user_preference
+  description: 'Changes a saved preference: its text, who it applies to, or both. Use it when the user changes or refines a preference that is already saved, instead of saving a second one next to it.
+
+
+    Take the id from get_user_preferences or from the result of the save. Leave `scope` out to keep the preference where it is; only the user decides to move one, so pass `scope` when they ask for it and never on your own.
+
+
+    A move to `project` needs `projectId` from `search_projects`. A move the user may not make is refused with `not_permitted`.
+
+
+    Tell the user what the preference says now and who it applies to, in the same turn.'
+  params:
+    id: Id of the preference to change.
+    content: The new text. Leave it out to keep the text and move the preference only.
+    scope: 'Who the preference applies to after the change: `user` the caller in every project, `project` everyone in one project, `instance` everyone on this n8n instance. Leave it out to keep the current scope.'
+    projectId: The project to move the preference to. Required with `scope` `project`.
+- name: undo_user_preference
+  description: 'Removes a preference that save_user_preference saved for this user. Call it when the user takes back a preference that was just saved, or asks to forget one that a connected AI tool saved earlier.
+
+
+    It only removes preferences saved through a connected AI tool for this user. A preference the user wrote in n8n settings, or one saved for a project or the whole instance, is refused; the user removes those in settings.
+
+
+    Tell the user in the same turn that the preference is gone.'
+  params:
+    id: Id of the preference to remove, from the save result.
+- name: search_nodes
+  description: Search for n8n nodes by service name, trigger type, or utility function. Set usage="agentTool" to return only Agent-compatible tool nodes. Returns node IDs, discriminators (resource/operation/mode), and related nodes needed for get_node_types.
+  params:
+    queries: Search queries for n8n nodes — service names (e.g. "gmail", "slack"), trigger types (e.g. "schedule trigger", "webhook"), or utility nodes (e.g. "set", "if", "merge", "code")
+    usage: Use agentTool to return only nodes that can be configured as Agent tools; defaults to workflow
+- name: get_node_types
+  description: 'Get TypeScript type definitions for n8n nodes. Returns exact parameter names and structures. MUST be called before writing workflow code or configuring node-backed tools — guessing parameter names creates invalid configurations. Pass nodeIds as an array of objects like { nodeId: "n8n-nodes-base.gmail" }. Include discriminators (resource/operation/mode) from search_nodes results.'
+  params:
+    nodeIds: Node type requests to get definitions for. Always pass an array of objects, even for a single node. Include discriminators from search_nodes results when available.
+- name: get_workflow_best_practices
+  description: Required planning step when building a workflow, and only then. Get best-practices guidance (recommended nodes, patterns, and common pitfalls) for a specific workflow technique before searching for nodes or writing code. Call once per relevant technique. Use technique="list" first if unsure which techniques apply.
+  params:
+    technique: 'Workflow technique key to fetch best-practices guidance for. Pass "list" to discover all available techniques. One of: list, scheduling, chatbot, form_input, scraping_and_research, monitoring, enrichment, triage, content_generation, document_processing, data_extraction, data_analysis, data_transformation, data_persistence, notification, knowledge_base, human_in_the_loop, web_app.'
+- name: explore_node_resources
+  description: Resolve the real values behind a node's resource locator or load-options dropdown (e.g. Slack channels, Google Sheets tabs, OpenAI models). Use this after get_node_types so you ground RLC and load-options parameters in real IDs instead of inventing them. Requires a credential ID from list_credentials — the call runs as the current user with that credential.
+  params:
+    nodeType: Fully-qualified node type ID from search_nodes / get_node_types, e.g. "n8n-nodes-base.slack".
+    version: Node version, e.g. 4.7. Must match a version returned by search_nodes.
+    methodName: The exact method name from the node's `@searchListMethod` or `@loadOptionsMethod` annotation in the type definition. Call get_node_types first to read the real method name. Do not invent or guess.
+    methodType: '"listSearch" for `@searchListMethod` annotations (supports filter/pagination); "loadOptions" for `@loadOptionsMethod` annotations.'
+    credentialType: Credential type key for the node, e.g. "slackApi" or "googleSheetsOAuth2Api".
+    credentialId: ID of a credential the user can access, obtained from list_credentials.
+    filter: Optional search/filter text to narrow results.
+    paginationToken: Pagination token from a previous call to fetch the next page (listSearch only).
+    currentNodeParameters: 'Current node parameters for dependent lookups. Some methods require prior selections — e.g. listing sheets within a spreadsheet needs `{ documentId: { __rl: true, mode: "id", value: "<spreadsheetId>" } }`. Check the type definition''s displayOptions to know which parameters a method depends on.'
+- name: validate_workflow
+  description: Validate n8n Workflow SDK code. Required before creating or updating workflows from code. If you have not already read get_workflow_sdk_reference, call that first; guessing SDK syntax commonly creates invalid workflows.
+  params:
+    code: Full TypeScript/JavaScript workflow code using the n8n Workflow SDK. Must include the workflow export. Max 300000 characters.
+- name: validate_node_config
+  description: 'Validate a node''s config the moment you write it — before assembling create_workflow_from_code or calling update_workflow. Read-only and needs no existing workflow, so use it freely while composing. Unlike the write tools (which validate only as they mutate), this returns isolated per-node, per-parameter errors with no graph noise, and can check several candidate configs in one call so you wire only the one that passes. For langchain tool subnodes (nodes wired via ai_tool), set isToolNode: true so the schema evaluates the correct displayOptions branch. Schema-level only — for connections, required inputs, triggers, and credentials use validate_workflow.'
+  params:
+    nodes: One or more node configurations to validate independently.
+- name: create_workflow_from_code
+  description: Create a workflow in n8n from validated SDK code. This tool expects code that already follows the n8n Workflow SDK patterns and has passed validate_workflow. If code fails to parse, call get_workflow_sdk_reference, rewrite the code using the reference, validate again, then retry creation. If the user named a target project, resolve it via search_projects before calling this tool; when projectId is omitted, the workflow is created in the user's personal project. If the user named a target folder, resolve it via search_folders. If you used n8n skills while preparing this workflow, pass their identifiers in skillsUsed. After creation, always tell the user which project — and folder, if any — the workflow landed in (see the targetProject and targetFolder fields in the response).
+  params:
+    code: Full TypeScript/JavaScript workflow code using the n8n Workflow SDK. Must be validated first with validate_workflow. Max 300000 characters.
+    skillsUsed: IDs of n8n skills used to prepare this call, e.g. "workflow-builder". An optional plugin prefix is allowed, e.g. "n8n-skills:workflow-builder". Entries are normalized server-side (trimmed, lowercased, deduped); invalid identifiers are dropped.
+    name: Optional workflow name. If not provided, uses the name from the code.
+    description: Workflow description. Longer text is shortened to 255 chars before saving.
+    versionName: Short summary of this initial version, shown in the workflow's version history (e.g. "Initial Slack notification workflow"). Always provide it.
+    versionDescription: Longer description of what this version does, shown in the version history alongside the version name.
+    projectId: Project ID to create the workflow in. If the user named a project (e.g. 'in my Marketing project'), you MUST call search_projects first to resolve the name to an ID and pass it here — do not guess. If search_projects returns multiple partial matches with no exact match, ask the user to clarify before creating the workflow. Only omit this field when the user did not mention a project at all; in that case it defaults to the user's personal project.
+    folderId: Optional folder ID to create the workflow in. Requires projectId to be set. Use search_folders to find a folder by name within a project; when multiple folders match the name, ask the user which one they meant before creating.
+- name: search_projects
+  description: Search for projects accessible to the current user. Call this whenever the user names a project — pass the name as the query, then use the resolved ID with tools that take a projectId. Results are ranked with exact case-insensitive name matches first. If no exact match is found but multiple partials are returned, the response includes a `hint` field telling you to clarify with the user before acting; follow it instead of guessing. The response also includes `teamProjectsEnabled` — when false, team projects are not licensed on this instance, so default to creating in the caller's personal project unless the user explicitly picks one of the returned accessible projects.
+  params:
+    query: Filter projects by name (case-insensitive partial match). Pass the exact project name the user mentioned — results are ranked with exact case-insensitive matches first, then partial matches.
+    type: Filter by project type. 'team' for shared team projects, 'personal' for personal projects.
+    limit: Limit the number of results (max 100)
+- name: archive_workflow
+  description: Archive a workflow in n8n by its ID.
+  params:
+    workflowId: The ID of the workflow to archive
+- name: update_workflow
+  description: 'Atomically update an existing workflow with operation objects. Edits nodes/connections and also workflow-level settings via setWorkflowSettings — including the error workflow that runs automatically on failure to send alerts (e.g. when a user asks to "add error handling" or "notify me if this breaks"). Pass skillsUsed if n8n skills were used. Node-group operations (setNodeGroups, addNodeGroup, removeNodeGroup, updateNodeGroup) are the one exception to "atomically": an invalid one is skipped and reported in skippedOperations instead of aborting the whole update. Separately, if other edits in the batch make an existing group invalid, that group is removed and reported in removedGroups.'
+  params:
+    workflowId: The ID of the workflow to update.
+    skillsUsed: IDs of n8n skills used to prepare this call, e.g. "workflow-builder". An optional plugin prefix is allowed, e.g. "n8n-skills:workflow-builder". Entries are normalized server-side (trimmed, lowercased, deduped); invalid identifiers are dropped.
+    operations: 'Ordered operations to apply atomically (max 100). If any op fails, nothing is saved — except node-group operations (setNodeGroups, addNodeGroup, removeNodeGroup, updateNodeGroup): an invalid one is skipped and reported in skippedOperations, while the rest of the batch still saves. An existing group that these ops leave invalid is removed and reported in removedGroups.'
+    versionName: Short summary of what this update changes, shown in the workflow's version history (e.g. "Added Slack notification after HTTP request"). Always provide it.
+    versionDescription: Longer description of what changed and why, shown in the version history alongside the version name.
+- name: restore_workflow_version
+  description: Restore a workflow to a previous version from its history. Re-applies that version as the current draft and records a new history entry. Use get_workflow_history to find the versionId.
+  params:
+    workflowId: The ID of the workflow to restore
+    versionId: The version ID to restore, as returned by get_workflow_history
+- name: install_community_node
+  description: Install a verified community node package that search_nodes reported as not installed on this instance. Installs code onto the n8n instance, so confirm with the user before calling it. Only packages vetted by n8n can be installed, at the version the registry publishes. After installing, call get_node_types for the returned node types before writing workflow code.
+  params:
+    nodeType: Full node type of a verified community node reported by search_nodes as not installed, e.g. "@mendable/n8n-nodes-firecrawl.firecrawl". The package that ships it is installed.
+- name: get_workflow_sdk_reference
+  description: Required reference when building a workflow, and only then. Call this BEFORE writing workflow code to learn workflow(), trigger()/node(), .add()/.to(), expr(), and credential patterns.
+  params:
+    section: Optional section to retrieve. Omit this for the full reference, or use a section for targeted lookup.
+- name: search_agents
+  description: 'Search Agents the current user can access. Use excludeAgentId to discover saved sub-agents. Other agent tools only operate on agents with availableInMCP: true.'
+  params:
+    projectId: Restrict results to one project
+    query: Filter by Agent name
+    publishedOnly: ''
+    excludeAgentId: Agent ID to omit, useful for sub-agent search
+    limit: ''
+- name: get_agent
+  description: Read an Agent draft, sidecar resources, runnable state, and configHash. Call before mutate_agent. Pass versionId to inspect a published version snapshot instead of the draft.
+  params:
+    agentId: Agent ID
+    versionId: Read a published version snapshot instead of the draft, e.g. the activeVersionId. Snapshots are read-only, so the response has no configHash.
+- name: create_agent
+  description: Create an Agent draft, optionally with its initial model, credential, instructions, and ordinary tool configuration. Returns its n8n editor URL. Use mutate_agent afterward for skills, tasks, and custom tools.
+  params:
+    projectId: ''
+    name: ''
+    config: Optional initial Agent config without name, skills, tasks, or custom tools. The top-level name is injected into the config.
+- name: mutate_agent
+  description: 'Apply one config, skill, task, or custom-tool mutation to an Agent draft. The operation fields sit directly on the operation object (no value wrapper), e.g. { "type": "config.patch", "patch": [...] }. Returns the next configHash for subsequent mutations.'
+  params:
+    agentId: Agent ID
+    baseConfigHash: Latest configHash returned by get_agent or a successful mutation
+    operation: ''
+- name: validate_agent
+  description: Validate an Agent draft, sidecar references, and user-accessible credentials. Returns its n8n editor URL.
+  params:
+    agentId: Agent ID
+- name: call_agent
+  description: Test an Agent draft through built-in Preview chat. Start or continue a conversation with a message request, or resume one returned approval after the human decides. This uses real tools and credentials, so external side effects are possible.
+  params:
+    agentId: Agent ID
+    request: ''
+- name: publish_agent
+  description: Publish a valid Agent draft and activate its tasks and integrations. Pass versionId to republish a previously published version instead. Only call after the user explicitly requests or confirms publication; completing a build does not imply approval.
+  params:
+    agentId: Agent ID
+    versionId: Republish a previously published version instead of the current draft. The draft is left untouched.
+- name: unpublish_agent
+  description: Unpublish an Agent and stop its live tasks and integrations.
+  params:
+    agentId: Agent ID
+- name: revert_agent
+  description: Restore an Agent draft from a published version, overwriting the draft config, skills, tasks, and custom tools. Does not publish. Inspect the version with get_agent first; the response returns the new configHash.
+  params:
+    agentId: Agent ID
+    versionId: Published version to restore the draft from; defaults to the currently published version
+- name: list_agent_versions
+  description: List the publish history of an Agent, newest first. Pass a versionId to get_agent to inspect a version before revert_agent or publish_agent.
+  params:
+    agentId: Agent ID
+    limit: ''
+    offset: ''
+- name: delete_agent
+  description: Permanently delete an Agent and its associated resources.
+  params:
+    agentId: Agent ID
+- name: discover_agent_assets
+  description: Discover model catalogs, chat integrations, attachable workflows, saved sub-agents, or MCP registry servers.
+  params:
+    projectId: ''
+    kind: ''
+    query: Optional filter for model IDs, workflows, subagents, or MCP servers
+    provider: Model provider for kind=models; omit to get a provider summary without model lists
+    credentialId: Accessible credential used to verify models for the selected provider
+    excludeAgentId: Agent to omit when kind=subagents
+- name: verify_agent_mcp_server
+  description: Test an MCP server with a user-accessible credential and return its available tools. Call before writing an mcpServers config entry; validate_agent performs no live MCP check.
+  params:
+    projectId: ''
+    name: ''
+    url: HTTP(S) MCP server endpoint, or a registry `$self`-expression when metadata.nodeTypeName is set
+    transport: ''
+    authentication: Authentication method; every value other than none requires credential
+    credential: Accessible credential ID; required when authentication is not none
+    metadata: ''
+    connectionTimeoutMs: ''
+- name: update_agent_integration
+  description: 'Configure or disconnect a Slack, Telegram, or Linear conversation integration. This is the only way to manage integrations; config.replace and config.patch can''t change them. Configuration never publishes the Agent. If the Agent is already published, connecting starts the channel immediately. Otherwise, the channel stays inactive until publish_agent is called. For Slack, connect without credentialId first: n8n returns the workspaces where it can create a Slack app for the Agent, or the steps the user must take in n8n. Then call again with managerCredentialId and workspaceId after the user confirms the workspace.'
+  params:
+    agentId: Agent ID
+    action: ''
+    type: Integration type returned by discover_agent_assets
+    credentialId: Accessible credential for this integration. Required for disconnect and for non-Slack connect operations. Omit it to connect Slack through managed setup
+    managerCredentialId: 'Slack managed setup only: the managerCredentialId returned by a Slack connect call without credentialId'
+    workspaceId: 'Slack managed setup only: the workspaceId returned by a Slack connect call without credentialId'
+    settings: Integration settings; required for Telegram connect operations
+    replacesCredentialId: On connect, the credential of the same type this one takes over from. Swaps both in one operation instead of a separate disconnect
+- name: get_agent_builder_reference
+  description: Return the required reference for Agent configuration and mutate_agent operations. Read before building an Agent.
