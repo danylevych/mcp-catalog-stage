@@ -1,0 +1,175 @@
+name: SaaSJet MCP Gateway
+entryKey: saasjet-mcp-gateway
+serverUserType: singleUser
+shortDescription: "Company MCP servers (repos-mcp, org-matrix, marketplace) behind one gateway with company Google sign-in"
+description: |
+  One connection to SaaSJet's internal MCP servers behind the company MCP Gateway
+  (Amazon Bedrock AgentCore Gateway with Auth0). Sign in with your company Google
+  account; the tools you see depend on the roles assigned to you in Auth0
+  (`mcp:repos`, `mcp:org-matrix`, `mcp:marketplace`).
+
+  ## Servers
+  - **repos-mcp**: internal packages and their documentation.
+  - **org-matrix**: organisation structure, departments, units, levels and indicators.
+  - **marketplace**: read-only data from Marketplace Parser: apps, installations,
+    history, reviews, revenue estimates and pricing.
+
+  ## What you'll need to connect
+
+  **No setup required**: authentication is handled through OAuth (Auth0, company
+  Google account). Ask an administrator for the role you need.
+icon: https://img.icons8.com/color/96/api-settings.png
+metadata:
+  categories: "Business, Developer Tools"
+repoURL: https://bitbucket.org/saasjet/mcp-gateway
+runtime: remote
+remoteConfig:
+  fixedURL: https://saasjet-mcp-gateway-cb9qgtftjx.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp
+toolPreview:
+- name: repos-mcp___get_package_doc
+  description: Fetch internal library documentation for a given package.
+  params:
+    package: Internal package name (e.g.
+- name: repos-mcp___list_internal_packages
+  description: List all available internal npm packages with names and descriptions.
+- name: org-matrix___find_person
+  description: Searches people by name or position across the whole org.
+  params:
+    query: Part of a person's name or a position title, e.g.
+    canvas: Optional org-chart name or id.
+- name: org-matrix___get_canvas_list
+  description: Lists all available canvases (org charts) as { id, name, order, is_default }, ordered by `order`.
+- name: org-matrix___get_department
+  description: 'Details of a department: id, name, head (Person), doc_url, type and `units` — the parent unit it belongs to as an {id, name} reference (empty when the department sits directly under the CEO).'
+  params:
+    dept_id: Department node id (team_id) or name.
+    canvas: Optional org-chart name or id.
+- name: org-matrix___get_indicators
+  description: Returns the indicators (KPIs) of a single matrix cell / node by its id.
+  params:
+    section_id: Section/node id (or product-line id) whose indicators to fetch.
+    canvas: Optional org-chart name or id.
+- name: org-matrix___get_level
+  description: Extracts one row of the org matrix.
+  params:
+    level: 'Level/row identifier: ''ceo'', ''unit'', ''dept'', ''base'' (Core Functions), or a product-line id or name.'
+    canvas: Optional org-chart name or id.
+- name: org-matrix___get_org_structure
+  description: Top-down overview of the organization.
+  params:
+    canvas: Optional org-chart name or id.
+- name: org-matrix___get_product_lines
+  description: Returns the organization's product lines — a separate, org-wide entity (the rows of the org matrix).
+  params:
+    canvas: Optional org-chart name or id.
+- name: org-matrix___get_unit
+  description: 'Details of a unit: id, name, type, head (Person) and its `departments` (each with id, type, name, head and unit_ids).'
+  params:
+    unit_id: Unit node id (team_id) or name.
+    canvas: Optional org-chart name or id.
+- name: marketplace___aggregate_apps
+  description: 'Latest-snapshot aggregates: number of apps and the chosen sums/averages (installations, reviews, rating, users) per category or per vendor, plus totals over all apps.'
+  params:
+    marketplace: 'Marketplace: atlassian.'
+    group_by: string
+    groups: Category names (exact values, see describe_marketplace) or vendor names.
+    metrics: Sums/averages to compute; apps_count is always returned.
+    min_installations: integer
+    max_installations: integer
+    min_rating: number
+    max_rating: number
+    min_reviews: integer
+    max_reviews: integer
+- name: marketplace___analyze_niche
+  description: Atlassian only. Apps of one SaaSJet product niche with installations and users per app and niche totals.
+  params:
+    niche: string
+    app_ids: Competitor app_ids instead of a niche.
+    min_installations: integer
+    max_installations: integer
+- name: marketplace___describe_marketplace
+  description: 'What a marketplace supports: available tools, unified filters and their API names, marketplace-specific extra_filters with types and allowed values, output fields, default fields, sort options and categories.'
+  params:
+    marketplace: 'Marketplace: atlassian.'
+- name: marketplace___find_apps
+  description: Finds apps whose name is similar to the given text and returns up to 20 matches with their id (app_id, or app_key for trello and microsoft-store), vendor and key metrics.
+  params:
+    marketplace: 'Marketplace: atlassian.'
+    name: App name or words from it.
+    fields: Fields to return.
+- name: marketplace___get_app_history
+  description: Weekly snapshots of one or more apps (installations, users, reviews, rating, releases… depending on the marketplace), newest first, within an optional period.
+  params:
+    marketplace: 'Marketplace: atlassian.'
+    app_ids: App ids (1–10).
+    from: Start date, YYYY-MM-DD.
+    to: End date, YYYY-MM-DD.
+    fields: Fields to return.
+    limit_per_app: Snapshots per app, default 52 (about a year).
+- name: marketplace___get_app_reviews
+  description: 'Atlassian only. With one app_id and a hosting: that app''s reviews (date, stars, text, votes) newest first.'
+  params:
+    app_ids: Atlassian app_id values (1–10), from find_apps or search_apps.
+    hosting: string
+    from: Start date, YYYY-MM-DD.
+    to: End date, YYYY-MM-DD.
+    limit: Single-app mode, default 50.
+- name: marketplace___get_pricing
+  description: Atlassian only. Current price lists of apps per hosting and billing period (monthly for cloud, annual) and plan, as prices for user tiers (10 … 10k users by default).
+  params:
+    app_ids: Atlassian app_id values (1–10), from find_apps or search_apps.
+    plan: string
+    hosting: array
+    from: Start date, YYYY-MM-DD.
+    to: End date, YYYY-MM-DD.
+    all_tiers: Return every user tier instead of the default subset.
+- name: marketplace___get_revenue
+  description: 'Atlassian only. Weekly estimated revenue per app: total and per hosting (cloud, server, datacenter) plus estimated users.'
+  params:
+    app_ids: Atlassian app_id values (1–10), from find_apps or search_apps.
+    limit_per_app: Weeks per app, default 52.
+- name: marketplace___search_apps
+  description: Lists apps from the latest weekly snapshot that match filters (vendor, categories, installations, rating, reviews, marketplace-specific extra_filters), sorted by installations, rating, reviews, release_date or users.
+  params:
+    marketplace: 'Marketplace: atlassian.'
+    vendor: Vendor (partner) name, substring match.
+    categories: Category names.
+    min_installations: integer
+    max_installations: integer
+    min_rating: Average stars, 0–5.
+    max_rating: number
+    min_reviews: Number of reviews.
+    max_reviews: integer
+    extra_filters: Marketplace-specific filters by API name (e.g.
+    sort_by: string
+    sort_order: Default desc.
+    limit: Default 20.
+    offset: integer
+    fields: Fields to return.
+- name: marketplace___search_reviews
+  description: 'Atlassian only. Reviews of all apps on one hosting for a period of up to 90 days, newest first, filtered by stars and votes: date, app_id, app name, stars, text, votes.'
+  params:
+    hosting: Default cloud.
+    from: Start date, YYYY-MM-DD.
+    to: End date, YYYY-MM-DD; default today.
+    min_stars: integer
+    max_stars: integer
+    min_total_votes: integer
+    max_total_votes: integer
+    min_helpful_votes: integer
+    limit: Default 50.
+- name: marketplace___sum_installations
+  description: Total installations of all apps matching the filters, per month (last snapshot of each month).
+  params:
+    marketplace: 'Marketplace: atlassian.'
+    vendor: Vendor (partner) name, substring match.
+    categories: Category names.
+    min_installations: integer
+    max_installations: integer
+    min_rating: Average stars, 0–5.
+    max_rating: number
+    min_reviews: Number of reviews.
+    max_reviews: integer
+    extra_filters: Marketplace-specific filters by API name (e.g.
+    from: First month to include (any day of it), YYYY-MM-DD.
+    to: Last day to include, YYYY-MM-DD.
