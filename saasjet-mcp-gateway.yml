@@ -1,24 +1,26 @@
 name: SaaSJet MCP Gateway
 entryKey: saasjet-mcp-gateway
 serverUserType: singleUser
-shortDescription: "Company MCP servers (repos-mcp, org-matrix, marketplace) behind one gateway with company Google sign-in"
+shortDescription: "Company MCP servers (repos-mcp, org-matrix, marketplace, google-analytics) behind one gateway with company Google sign-in"
 description: |
   One connection to SaaSJet's internal MCP servers behind the company MCP Gateway
   (Amazon Bedrock AgentCore Gateway with Auth0). Sign in with your company Google
   account; the tools you see depend on the roles assigned to you in Auth0
-  (`mcp:repos`, `mcp:org-matrix`, `mcp:marketplace`).
+  (`mcp:repos`, `mcp:org-matrix`, `mcp:marketplace`, `mcp:ga`).
 
   ## Servers
   - **repos-mcp**: internal packages and their documentation.
   - **org-matrix**: organisation structure, departments, units, levels and indicators.
   - **marketplace**: read-only data from Marketplace Parser: apps, installations,
     history, reviews, revenue estimates and pricing.
+  - **google-analytics**: Google Analytics 4 accounts, properties and reports
+    (standard, realtime, funnel and conversions).
 
   ## What you'll need to connect
 
   **No setup required**: authentication is handled through OAuth (Auth0, company
   Google account). Ask an administrator for the role you need.
-icon: https://img.icons8.com/color/96/api-settings.png
+icon: https://saasjet.com/wp-content/uploads/2021/07/icon1.png
 metadata:
   categories: "Business, Developer Tools"
 repoURL: https://bitbucket.org/saasjet/mcp-gateway
@@ -173,3 +175,72 @@ toolPreview:
     extra_filters: Marketplace-specific filters by API name (e.g.
     from: First month to include (any day of it), YYYY-MM-DD.
     to: Last day to include, YYYY-MM-DD.
+- name: google-analytics___get_account_summaries
+  description: 'Retrieves information about the user''s Google Analytics accounts and properties.'
+- name: google-analytics___get_custom_dimensions_and_metrics
+  description: 'Returns the property''s custom dimensions and metrics.'
+  params:
+    property_id: string
+- name: google-analytics___get_property_details
+  description: Returns details about a property.
+  params:
+    property_id: string
+- name: google-analytics___list_google_ads_links
+  description: Returns a list of links to Google Ads accounts for a property.
+  params:
+    property_id: string
+- name: google-analytics___list_property_annotations
+  description: Returns annotations for a property.
+  params:
+    property_id: string
+- name: google-analytics___run_conversions_report
+  description: Runs a Google Analytics Data API conversions report.
+  params:
+    property_id: string
+    date_ranges: array
+    dimensions: array
+    metrics: array
+    conversion_spec: object
+    dimension_filter: object
+    metric_filter: object
+    order_bys: array
+    limit: integer
+    offset: integer
+    currency_code: string
+    return_property_quota: boolean
+- name: google-analytics___run_funnel_report
+  description: Run a Google Analytics Data API funnel report.
+  params:
+    property_id: string
+    funnel_steps: array
+    date_ranges: array
+    funnel_breakdown: object
+    funnel_next_action: object
+    segments: array
+    return_property_quota: boolean
+- name: google-analytics___run_realtime_report
+  description: Runs a Google Analytics Data API realtime report.
+  params:
+    property_id: string
+    dimensions: array
+    metrics: array
+    dimension_filter: object
+    metric_filter: object
+    order_bys: array
+    limit: integer
+    offset: integer
+    return_property_quota: boolean
+- name: google-analytics___run_report
+  description: Runs a Google Analytics Data API report.
+  params:
+    property_id: string
+    date_ranges: array
+    dimensions: array
+    metrics: array
+    dimension_filter: object
+    metric_filter: object
+    order_bys: array
+    limit: integer
+    offset: integer
+    currency_code: string
+    return_property_quota: boolean
