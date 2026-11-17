@@ -29,7 +29,7 @@ config:
     sensitive: false
     usage: interpolated
   - name: Atlassian API token
-    description: A scoped API token for Atlassian MCP V2.
+    description: "A scoped API token for Atlassian MCP V2: [create one](https://id.atlassian.com/manage-profile/security/api-tokens?autofillToken&expiryDays=max&appId=mcp-v2&selectedScopes=all)."
     key: Authorization
     required: true
     sensitive: true
